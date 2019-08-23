@@ -119,60 +119,116 @@ ggplot(wx_2018) +
 
 
 # Can customize other stuff aside from color: line type, line width, transparency
-
+ggplot() +
+    geom_line(aes(x = c(1, 2, 3, 4), y = c(1, 1, 1, 1)),
+              color = "blue", linetype = 2, alpha = 0.5, lwd = 3)
 
 
 
 ####--------------------   _POINT PLOTS  --------------------####
 
-ggplot(wx_2018) +
-    geom_point(aes(x = DATETIME, y = TEMP), color = "red")
-
-
 
 ######## DISCUSS DIFFERENT SHAPES AND COLOR VS FILL
 
+# show help document with point hapes, line widths, colors, etc.
+
 ggplot() +
     geom_point(aes(x = 1, y = 1), shape = 1, size = 7, color = "blue", fill = "orange") +
-    geom_point(aes(x = 2, y = 1), shape = 2, size = 7, color = "blue", fill = "orange") +
-    geom_point(aes(x = 3, y = 1), shape = 3, size = 7, color = "blue", fill = "orange") +
-    geom_point(aes(x = 4, y = 1), shape = 4, size = 7, color = "blue", fill = "orange") +
-    geom_point(aes(x = 5, y = 1), shape = 5, size = 7, color = "blue", fill = "orange") +
-    geom_point(aes(x = 6, y = 1), shape = 6, size = 7, color = "blue", fill = "orange") +
-    geom_point(aes(x = 7, y = 1), shape = 7, size = 7, color = "blue", fill = "orange") +
-    geom_point(aes(x = 8, y = 1), shape = 8, size = 7, color = "blue", fill = "orange") +
-    geom_point(aes(x = 9, y = 1), shape = 9, size = 7, color = "blue", fill = "orange") +
-    geom_point(aes(x = 10, y = 1), shape = 10, size = 7, color = "blue", fill = "orange") +
-    geom_point(aes(x = 11, y = 1), shape = 11, size = 7, color = "blue", fill = "orange") +
-    geom_point(aes(x = 12, y = 1), shape = 12, size = 7, color = "blue", fill = "orange") +
-    geom_point(aes(x = 13, y = 1), shape = 13, size = 7, color = "blue", fill = "orange") +
-    geom_point(aes(x = 14, y = 1), shape = 14, size = 7, color = "blue", fill = "orange") +
-    geom_point(aes(x = 15, y = 1), shape = 15, size = 7, color = "blue", fill = "orange") +
-    geom_point(aes(x = 16, y = 1), shape = 16, size = 7, color = "blue", fill = "orange") +
-    geom_point(aes(x = 17, y = 1), shape = 17, size = 7, color = "blue", fill = "orange") +
-    geom_point(aes(x = 18, y = 1), shape = 18, size = 7, color = "blue", fill = "orange") +
-    geom_point(aes(x = 19, y = 1), shape = 19, size = 7, color = "blue", fill = "orange") +
-    geom_point(aes(x = 20, y = 1), shape = 20, size = 7, color = "blue", fill = "orange") +
-    geom_point(aes(x = 21, y = 1), shape = 21, size = 7, color = "blue", fill = "orange") +
-    geom_point(aes(x = 22, y = 1), shape = 22, size = 7, color = "blue", fill = "orange") +
-    geom_point(aes(x = 23, y = 1), shape = 23, size = 7, color = "blue", fill = "orange") +
-    geom_point(aes(x = 24, y = 1), shape = 24, size = 7, color = "blue", fill = "orange") +
-    geom_point(aes(x = 25, y = 1), shape = 25, size = 7, color = "blue", fill = "orange")
+    geom_point(aes(x = 2, y = 1), shape = 19, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 3, y = 1), shape = 21, size = 7, color = "blue", fill = "orange")
 
 
 
+ggplot(wx_2018) +
+    geom_point(aes(x = DATETIME, y = TEMP), color = "red")
+
+# Experiment with different shapes. size and colors here
 
 
 ##### GEOM_SMOOTH FOR LM LINEAR TRENDLINE
 
+# Adding a best-fit line to the scatterplot.
+# Note that if aesthethics are recycled, it's more efficient to place all aes() info
+#   into the main ggplot() call
+
+# Default:
+ggplot(wx_2018, aes(x = DATETIME, y = TEMP)) +
+    geom_point(color = "red") +
+    geom_smooth()
+
+# Trend line:
+ggplot(wx_2018, aes(x = DATETIME, y = TEMP)) +
+    geom_point(color = "red") +
+    geom_smooth(method = "lm", se = F)
+
+
+
+
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+######################  EASILY PLOT MULTIPLE VARIABLES ####################
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 # In order to avoid adding a geom_line() for every variable, can "melt"
-#   the dataset:
+#   the dataset: reshape it from wide to long format, and group multiple
+#   variable of interest into a "variable" column, and their values into
+#   the "value" column
+
 wx_2018_melt = melt(wx_2018, id.vars = c("DATETIME"))
 
-
+# This allows us to plot multiple variables all at once (more space-efficient)
 ggplot(wx_2018_melt, aes(x = DATETIME, y = value, color = variable)) +
     geom_line()
+
+
+# Lets shorten the dataset:
+wx_jan2018 = wx_2018[wx_2018$DATETIME < "2018-02-01 12:00:00", ]
+wx_jan2018_melt = wx_2018_melt[wx_2018_melt$DATETIME < "2018-02-01 12:00:00", ]
+
+ggplot(wx_jan2018_melt, aes(x = DATETIME, y = value, color = variable)) +
+    geom_line()
+
+# Challenge: draw RH with points, precip with columns, and the rest with lines
+
+
+# the final plot can also be called like this:
+ggplot(wx_jan2018_melt[wx_jan2018_melt$variable %in% c("TEMP", "RH", "WS"), ],
+       aes(x = DATETIME, y = value,
+             color = variable, fill = variable)) +
+    geom_line() +
+    geom_col(data = wx_jan2018_melt[wx_jan2018_melt$variable %in% c("PRECIP"), ]) +
+    geom_point(data = wx_jan2018_melt[wx_jan2018_melt$variable %in% c("WD"), ])
+
+# Now try using the non-melted data
+
+ggplot(data = wx_jan2018, aes(x = DATETIME)) +
+    geom_line(aes(y = TEMP, color = "Temp")) +
+    geom_line(aes(y = RH, color = "RH")) +
+    geom_line(aes(y = WS, color = "Wind speed")) +
+    geom_point(aes(y = WD, color = "Wind dir")) +
+    geom_col(aes(y = PRECIP, fill = "Precip")) +
+    labs(fill = "") +
+    guides(color = guide_legend(order = 1), fill = guide_legend(order = 2)) +
+    theme(legend.spacing.y = unit(0, 'cm'))
+
+
+ggplot(data = wx_jan2018, aes(x = DATETIME)) +
+    geom_line(aes(y = TEMP, color = "Temp")) +
+    geom_line(aes(y = RH, color = "RH")) +
+    geom_line(aes(y = WS, color = "Wind speed")) +
+    geom_point(aes(y = WD, color = "Wind dir")) +
+    geom_col(aes(y = PRECIP, fill = "Precip"), show.legend = F) +
+    geom_point(aes(y = PRECIP, color = "Precip"), size = -Inf) +
+    guides(color = guide_legend(override.aes = list(linetype = c(1, 1, 1, NA, 1),
+                                                    shape = c(NA, NA, NA, 19, NA),
+                                                    size = c(6, 0.7, 0.7, 1.6, 0.7))))
+    
+
+
+
+
+
 
 
 # Only plot temp, RH and precip:
@@ -256,7 +312,8 @@ ggplot(wx_2018_melt[wx_2018_melt$variable %in% c("TEMP", "RH"), ], aes(x = DATET
 #   show.legend = FALSE in the geom_col and adding to the plot
 #   guides(fill = guide_legend(override.aes = list(size = c(7, 1, 1))))
 
-ggplot(wx_2018_melt[wx_2018_melt$variable %in% c("TEMP", "RH"), ], aes(x = DATETIME, y = value,
+ggplot(wx_2018_melt[wx_2018_melt$variable %in% c("TEMP", "RH"), ],
+       aes(x = DATETIME, y = value,
              color = variable, fill = variable)) +
     geom_line() +
     geom_col(data = wx_2018_melt[wx_2018_melt$variable %in% c("PRECIP"), ],
