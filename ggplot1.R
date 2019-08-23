@@ -1,7 +1,7 @@
 
 
 
-setwd("C:/Users/MelnikK/OneDrive - scion/Documents/1 - Workspace/1-Small current tasks/R course/R_session-ggplot")
+setwd("C:\Users\MelnikK\OneDrive - scion\Documents\1 - Workspace\R_sessions\R_session_ggplot1")
 
 
 if(!require(ggplot2)){install.packages("ggplot2")}
@@ -22,7 +22,10 @@ library(reshape2)
 # Talk about themes
 
 
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+######################  PRE-PROCESSING WEATHER DATA ####################
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
 # Plotting weather data
 
 # Read in the weather data file
@@ -50,6 +53,14 @@ wx_2018 = wx_all[wx_all$DATETIME >= as.POSIXct("2018-01-01 12:00:00") &
                 wx_all$DATETIME <= as.POSIXct("2018-12-31 12:00:00"), ]
 
 
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+######################  POINT AND LINE GRAPHS ####################
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+
+####--------------------   _LINE PLOTS  --------------------####
+
+
 # Can create a basic plot of temperature over time:
 ggplot(wx_2018, aes(x = DATETIME, y = TEMP)) +
     geom_line()
@@ -60,11 +71,100 @@ ggplot(wx_2018) +
     geom_line(aes(x = DATETIME, y = TEMP), color = "green") +
     geom_line(aes(x = DATETIME, y = RH), color = "red")
 
-# But how do we insert a legend?
-#   -> include color in the aes() command:
+# But how do we insert a legend? Include color in the aes() command!
+#   Note: when inside aes(), you cannot specify the actual color of the line,
+#         but only the NAME associated with that color in the legend
+ggplot(wx_2018) +
+    geom_line(aes(x = DATETIME, y = TEMP, color = "green")) +
+    geom_line(aes(x = DATETIME, y = RH, color = "red"))
+
+
+# So it's better to use meaningful names:
 ggplot(wx_2018) +
     geom_line(aes(x = DATETIME, y = TEMP, color = "temp")) +
     geom_line(aes(x = DATETIME, y = RH, color = "RH"))
+
+# Want to have control over actual colors of each variable?
+#   -> use scale_color manual().
+# Bonus: it also allows us to change legend lables if needed
+ggplot(wx_2018) +
+    geom_line(aes(x = DATETIME, y = TEMP, color = "temp")) +
+    geom_line(aes(x = DATETIME, y = RH, color = "RH")) +
+    scale_color_manual(values = c("orange", "blue"), labels = c("RH (%)", "Temp (째C)"))
+# Note1: to get the 째 symbol, hold down ALT and press 248 on the number pad of the keyboard
+
+# Want to change the position of the legend?
+# Basic options include "top", "bottom", "right", "left", "none"
+ggplot(wx_2018) +
+    geom_line(aes(x = DATETIME, y = TEMP, color = "temp")) +
+    geom_line(aes(x = DATETIME, y = RH, color = "RH")) +
+    scale_color_manual(values = c("orange", "blue"), labels = c("RH (%)", "Temp (째C)")) +
+    theme(legend.position = "bottom")
+
+# Note1: change the name of the COLOR legend with:
+#    + labs(color = "Variables")
+# Notes2: remove the legend title with:
+#   + theme(legend.title = element_blank())
+
+# Try it here!
+
+# labs() allows us to change x-axis and y-axis labels, title, subtitle,
+#   and title of any legend you may have
+ggplot(wx_2018) +
+    geom_line(aes(x = DATETIME, y = TEMP, color = "temp")) +
+    geom_line(aes(x = DATETIME, y = RH, color = "RH")) +
+    scale_color_manual(values = c("orange", "blue"), labels = c("RH (%)", "Temp (째C)")) +
+    theme(legend.position = "bottom") +
+    labs(color = "Variables: ", title = "My title", subtitle = "My subtitle", x = "Date", y = "Value")
+
+
+# Can customize other stuff aside from color: line type, line width, transparency
+
+
+
+
+####--------------------   _POINT PLOTS  --------------------####
+
+ggplot(wx_2018) +
+    geom_point(aes(x = DATETIME, y = TEMP), color = "red")
+
+
+
+######## DISCUSS DIFFERENT SHAPES AND COLOR VS FILL
+
+ggplot() +
+    geom_point(aes(x = 1, y = 1), shape = 1, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 2, y = 1), shape = 2, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 3, y = 1), shape = 3, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 4, y = 1), shape = 4, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 5, y = 1), shape = 5, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 6, y = 1), shape = 6, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 7, y = 1), shape = 7, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 8, y = 1), shape = 8, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 9, y = 1), shape = 9, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 10, y = 1), shape = 10, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 11, y = 1), shape = 11, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 12, y = 1), shape = 12, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 13, y = 1), shape = 13, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 14, y = 1), shape = 14, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 15, y = 1), shape = 15, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 16, y = 1), shape = 16, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 17, y = 1), shape = 17, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 18, y = 1), shape = 18, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 19, y = 1), shape = 19, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 20, y = 1), shape = 20, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 21, y = 1), shape = 21, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 22, y = 1), shape = 22, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 23, y = 1), shape = 23, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 24, y = 1), shape = 24, size = 7, color = "blue", fill = "orange") +
+    geom_point(aes(x = 25, y = 1), shape = 25, size = 7, color = "blue", fill = "orange")
+
+
+
+
+
+##### GEOM_SMOOTH FOR LM LINEAR TRENDLINE
+
 
 # In order to avoid adding a geom_line() for every variable, can "melt"
 #   the dataset:
@@ -91,7 +191,7 @@ wx_plot1
 # Customize labels:
 wx_plot2 = wx_plot1 +
     labs(title = "Weather plot", x = "Date",
-         y = "Daily precipitation (mm)\nRelative humidity (%)\nAir temperature (캜)")
+         y = "Daily precipitation (mm)\nRelative humidity (%)\nAir temperature (?C)")
 wx_plot2
 
 # Customize colors and 
@@ -138,7 +238,7 @@ ggplot(wx_2018_melt[wx_2018_melt$variable %in% c("TEMP", "RH"), ], aes(x = DATET
     geom_line() +
     geom_col(data = wx_2018_melt[wx_2018_melt$variable %in% c("PRECIP"), ]) +
     labs(title = "Weather plot", x = "Date",
-         y = "Daily precipitation (mm)\nRelative humidity (%)\nAir temperature (캜)") +
+         y = "Daily precipitation (mm)\nRelative humidity (%)\nAir temperature (?C)") +
     scale_fill_manual(values= c("red", "green", "blue"),
                       labels = c("Precip", "RH", "Temp")) +
     scale_color_manual(values = c("red", "green", "blue"),
@@ -162,7 +262,7 @@ ggplot(wx_2018_melt[wx_2018_melt$variable %in% c("TEMP", "RH"), ], aes(x = DATET
     geom_col(data = wx_2018_melt[wx_2018_melt$variable %in% c("PRECIP"), ],
              show.legend = FALSE) +
     labs(title = "Weather plot", x = "Date",
-         y = "Daily precipitation (mm)\nRelative humidity (%)\nAir temperature (캜)") +
+         y = "Daily precipitation (mm)\nRelative humidity (%)\nAir temperature (?C)") +
     scale_color_manual(values = c("red", "green", "blue"),
                        labels = c(" Precip   ", " RH   ", " Temp   ")) +
     theme(legend.position = "bottom", legend.title = element_blank()) +
