@@ -11,8 +11,21 @@ library(tidyverse)
 library(reshape2)
 
 
+# color gradients
+# geom_tile for fun
+# geographical data
+
+
+
+
+# To navigate headers in this script, clip at the two little up/down arrows in
+#   the bottom-left corner of this text editor window
+# A heading gets generated when there's 4 or more "#" at the end of the line.
+# If there's no text, the heading is blank. So to simply separate out sections,
+#   I generally use one "#" and some other symbol to avoid getting a blank heading
+
+
 # Talk about:
-#   - headings in teh script (show how to display)
 #   - keep lines short
 #   - column names are in CAPS
 #   - 
@@ -49,45 +62,91 @@ names(wx_all)[names(wx_all) == "NEWDATETIME"] <- "DATETIME"
 # Now that DATETIME is in POSIXct format, can use "<" and ">" and plot it more easily.
 
 # Subset the dataframe to only retain 2018 weather:
-wx_2018 = wx_all[wx_all$DATETIME >= as.POSIXct("2018-01-01 12:00:00") &
-                wx_all$DATETIME <= as.POSIXct("2018-12-31 12:00:00"), ]
+wx_jan18 = wx_all[wx_all$DATETIME >= as.POSIXct("2018-01-01 00:00:00") &
+                wx_all$DATETIME < as.POSIXct("2018-02-01 00:00:00"), ]
 
 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 ######################  POINT AND LINE GRAPHS ####################
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
+####--------------------   _GGPLOT BASICS  --------------------####
+
+testdata = data.frame(my_x = c(1,2), my_y = c(20, 10))
+testdata
+
+# ggplot() takes from zero to 2 arguments in this order: data and mapping
+ggplot(data = testdata, aes(x = my_x , y = my_y)) +
+    geom_line()
+
+# If you get the order wrong, ggplot will throw an error:
+ggplot(aes(x = my_x , y = my_y), testdata) +
+    geom_line()
+
+# can remedy this by specifying the name of each argument:
+ggplot(mapping = aes(x = my_x , y = my_y), data = testdata) +
+    geom_line()
+
+# You cannot omit the mapping/aes() argument, as it's needed for ggplot to know
+#   where the points/line are to be drawn
+ggplot(data = testdata) +
+    geom_line()
+
+# However, you can omit data argument, as long as you give the exact x an y coordinates
+#   in the aes() call:
+ggplot(mapping = aes(x = testdata$my_x, y = testdata$my_y)) +
+    geom_line()
+
+# You don't even need to refer to any dataframe at all,
+#   as long as x and y gets the same number of entries:
+ggplot(mapping = aes(x = c(1, 2), y = c(10, 20))) +
+    geom_line()
+
+
+# Data and mapping can be specified in ggplot() AND/OR geom_line (and other geoms).
+# The order of these two arguments are reversed in the geoms, but ggplot will
+#   remind you if you forget :)
+# Of course you can specify the names of the arguments if there's a particular order
+#   that you want to follow
+
+ggplot() +
+    geom_line(aes(x = my_x , y = my_y), testdata)
+
+# Usually the easiest way is to specify things that do not change between multiple
+#   geomm in ggplot() call, and changeable things in individual geom_...() calls
+
+
 
 ####--------------------   _LINE PLOTS  --------------------####
 
 
 # Can create a basic plot of temperature over time:
-ggplot(wx_2018, aes(x = DATETIME, y = TEMP)) +
+ggplot(wx_jan18, aes(x = DATETIME, y = TEMP)) +
     geom_line()
 
-# To plot mulptiple variables this way, would need to specify x and y
+# To plot multiple variables this way, would need to specify x and y
 #   within the aesthetic separately for every line:
-ggplot(wx_2018) +
+ggplot(wx_jan18) +
     geom_line(aes(x = DATETIME, y = TEMP), color = "green") +
     geom_line(aes(x = DATETIME, y = RH), color = "red")
 
 # But how do we insert a legend? Include color in the aes() command!
 #   Note: when inside aes(), you cannot specify the actual color of the line,
 #         but only the NAME associated with that color in the legend
-ggplot(wx_2018) +
+ggplot(wx_jan18) +
     geom_line(aes(x = DATETIME, y = TEMP, color = "green")) +
     geom_line(aes(x = DATETIME, y = RH, color = "red"))
 
 
 # So it's better to use meaningful names:
-ggplot(wx_2018) +
+ggplot(wx_jan18) +
     geom_line(aes(x = DATETIME, y = TEMP, color = "temp")) +
     geom_line(aes(x = DATETIME, y = RH, color = "RH"))
 
 # Want to have control over actual colors of each variable?
 #   -> use scale_color manual().
 # Bonus: it also allows us to change legend lables if needed
-ggplot(wx_2018) +
+ggplot(wx_jan18) +
     geom_line(aes(x = DATETIME, y = TEMP, color = "temp")) +
     geom_line(aes(x = DATETIME, y = RH, color = "RH")) +
     scale_color_manual(values = c("orange", "blue"), labels = c("RH (%)", "Temp (Â°C)"))
@@ -95,7 +154,7 @@ ggplot(wx_2018) +
 
 # Want to change the position of the legend?
 # Basic options include "top", "bottom", "right", "left", "none"
-ggplot(wx_2018) +
+ggplot(wx_jan18) +
     geom_line(aes(x = DATETIME, y = TEMP, color = "temp")) +
     geom_line(aes(x = DATETIME, y = RH, color = "RH")) +
     scale_color_manual(values = c("orange", "blue"), labels = c("RH (%)", "Temp (Â°C)")) +
@@ -110,7 +169,7 @@ ggplot(wx_2018) +
 
 # labs() allows us to change x-axis and y-axis labels, title, subtitle,
 #   and title of any legend you may have
-ggplot(wx_2018) +
+ggplot(wx_jan18) +
     geom_line(aes(x = DATETIME, y = TEMP, color = "temp")) +
     geom_line(aes(x = DATETIME, y = RH, color = "RH")) +
     scale_color_manual(values = c("orange", "blue"), labels = c("RH (%)", "Temp (Â°C)")) +
@@ -119,11 +178,9 @@ ggplot(wx_2018) +
 
 
 # Can customize other stuff aside from color: line type, line width, transparency
-ggplot() +
-    geom_line(aes(x = c(1, 2, 3, 4), y = c(1, 1, 1, 1)),
-              color = "blue", linetype = 2, alpha = 0.5, lwd = 3)
-
-
+ggplot(wx_jan18) +
+    geom_line(aes(x = DATETIME, y = TEMP),
+              color = "blue", linetype = 6, alpha = 0.5, lwd = 1.5)
 
 ####--------------------   _POINT PLOTS  --------------------####
 
@@ -132,14 +189,15 @@ ggplot() +
 
 # show help document with point hapes, line widths, colors, etc.
 
+# While lines only had color, points can have color and/or fill:
 ggplot() +
     geom_point(aes(x = 1, y = 1), shape = 1, size = 7, color = "blue", fill = "orange") +
     geom_point(aes(x = 2, y = 1), shape = 19, size = 7, color = "blue", fill = "orange") +
     geom_point(aes(x = 3, y = 1), shape = 21, size = 7, color = "blue", fill = "orange")
 
 
-
-ggplot(wx_2018) +
+# By default geom_point uses shape = 19
+ggplot(wx_jan18) +
     geom_point(aes(x = DATETIME, y = TEMP), color = "red")
 
 # Experiment with different shapes. size and colors here
@@ -152,13 +210,13 @@ ggplot(wx_2018) +
 #   into the main ggplot() call
 
 # Default:
-ggplot(wx_2018, aes(x = DATETIME, y = TEMP)) +
-    geom_point(color = "red") +
+ggplot(wx_jan18, aes(x = DATETIME, y = TEMP)) +
+    geom_point() +
     geom_smooth()
 
 # Trend line:
-ggplot(wx_2018, aes(x = DATETIME, y = TEMP)) +
-    geom_point(color = "red") +
+ggplot(wx_jan18, aes(x = DATETIME, y = TEMP)) +
+    geom_point() +
     geom_smooth(method = "lm", se = F)
 
 
@@ -167,42 +225,53 @@ ggplot(wx_2018, aes(x = DATETIME, y = TEMP)) +
 
 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-######################  EASILY PLOT MULTIPLE VARIABLES ####################
+######################  PLOT MULTIPLE VARIABLES ####################
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-# In order to avoid adding a geom_line() for every variable, can "melt"
-#   the dataset: reshape it from wide to long format, and group multiple
-#   variable of interest into a "variable" column, and their values into
-#   the "value" column
+# If you want to have multiple of the same geom for multiple variables,
+#   can do it the long way:
 
-wx_2018_melt = melt(wx_2018, id.vars = c("DATETIME"))
+ggplot(wx_jan18, aes(x = DATETIME)) +
+    geom_line(aes(y = TEMP, color = "Temp")) +
+    geom_line(aes(y = RH, color = "RH")) +
+    geom_line(aes(y = WD, color = "WD")) +
+    geom_line(aes(y = WS, color = "WS")) +
+    geom_line(aes(y = PRECIP, color = "PRECIP"))
+
+
+# Or, can "melt" the dataset: reshape it from wide to long format, and group
+#   multiple variables of interest into a "variable" column, and their values into
+#   the "value" column:
+
+wx_jan18_melt = melt(wx_jan18, id.vars = c("DATETIME"))
 
 # This allows us to plot multiple variables all at once (more space-efficient)
-ggplot(wx_2018_melt, aes(x = DATETIME, y = value, color = variable)) +
+ggplot(wx_jan18_melt, aes(x = DATETIME, y = value, color = variable)) +
     geom_line()
 
 
-# Lets shorten the dataset:
-wx_jan2018 = wx_2018[wx_2018$DATETIME < "2018-02-01 12:00:00", ]
-wx_jan2018_melt = wx_2018_melt[wx_2018_melt$DATETIME < "2018-02-01 12:00:00", ]
 
-ggplot(wx_jan2018_melt, aes(x = DATETIME, y = value, color = variable)) +
-    geom_line()
-
-# Challenge: draw RH with points, precip with columns, and the rest with lines
+# Challenge:
+# Draw RH with points, precip with columns, and the rest with lines
+#   hint: it's easier using the non-melted data
 
 
-# the final plot can also be called like this:
-ggplot(wx_jan2018_melt[wx_jan2018_melt$variable %in% c("TEMP", "RH", "WS"), ],
+
+
+
+
+
+# Solution:
+# melted:
+ggplot(wx_jan18_melt[wx_jan18_melt$variable %in% c("TEMP", "RH", "WS"), ],
        aes(x = DATETIME, y = value,
              color = variable, fill = variable)) +
     geom_line() +
-    geom_col(data = wx_jan2018_melt[wx_jan2018_melt$variable %in% c("PRECIP"), ]) +
-    geom_point(data = wx_jan2018_melt[wx_jan2018_melt$variable %in% c("WD"), ])
+    geom_col(data = wx_jan18_melt[wx_jan18_melt$variable %in% c("PRECIP"), ]) +
+    geom_point(data = wx_jan18_melt[wx_jan18_melt$variable %in% c("WD"), ])
 
-# Now try using the non-melted data
-
-ggplot(data = wx_jan2018, aes(x = DATETIME)) +
+# non-melted data:
+ggplot(data = wx_jan18, aes(x = DATETIME)) +
     geom_line(aes(y = TEMP, color = "Temp")) +
     geom_line(aes(y = RH, color = "RH")) +
     geom_line(aes(y = WS, color = "Wind speed")) +
@@ -213,7 +282,12 @@ ggplot(data = wx_jan2018, aes(x = DATETIME)) +
     theme(legend.spacing.y = unit(0, 'cm'))
 
 
-ggplot(data = wx_jan2018, aes(x = DATETIME)) +
+# The legend doesn't look right... To fix it, need to do some creative things
+#   - remove the fill legend by using show.legend = F in geom_col()
+#   - create a dummy geom_point for "Precip" with a point size of -Inf (makes it invisible)
+#   - overrride the linetype, shape and size of the legend element susing override.aes
+
+ggplot(data = wx_jan18, aes(x = DATETIME)) +
     geom_line(aes(y = TEMP, color = "Temp")) +
     geom_line(aes(y = RH, color = "RH")) +
     geom_line(aes(y = WS, color = "Wind speed")) +
@@ -223,107 +297,163 @@ ggplot(data = wx_jan2018, aes(x = DATETIME)) +
     guides(color = guide_legend(override.aes = list(linetype = c(1, 1, 1, NA, 1),
                                                     shape = c(NA, NA, NA, 19, NA),
                                                     size = c(6, 0.7, 0.7, 1.6, 0.7))))
+
+
+# Can also reorder legend elements using scale_color_discrete(breaks = ...)
+#   but note that we'll need to redo the order in override.aes!
+ggplot(data = wx_jan18, aes(x = DATETIME)) +
+    geom_line(aes(y = TEMP, color = "Temp")) +
+    geom_line(aes(y = RH, color = "RH")) +
+    geom_line(aes(y = WS, color = "Wind speed")) +
+    geom_point(aes(y = WD, color = "Wind dir")) +
+    geom_col(aes(y = PRECIP, fill = "Precip"), show.legend = F) +
+    geom_point(aes(y = PRECIP, color = "Precip"), size = -Inf) +
+    guides(color = guide_legend(override.aes = list(linetype = c(1, 1, 1, NA, 1),
+                                                    shape = c(NA, NA, NA, 19, NA),
+                                                    size = c(0.7, 0.7, 0.7, 1.6, 6)))) +
+    scale_color_discrete(breaks = c("Temp", "RH", "Wind speed", "Wind dir", "Precip"))
     
 
+# Challenge:
+#   - Add plot title, change x axis label, y axis label, legend label.
+#   - Change color scheme
+#   - Change legend position
 
 
 
 
 
 
-# Only plot temp, RH and precip:
-ggplot(wx_2018_melt[wx_2018_melt$variable %in% c("TEMP", "RH", "PRECIP"), ],
+
+
+# Challenge:
+# Make the same plot, but for February 2018
+
+
+
+
+
+
+
+
+# Subset the dataset to only plot selected variables
+
+# Only plot temp, RH and wind speed:
+ggplot(wx_jan18_melt[wx_jan18_melt$variable %in% c("TEMP", "RH", "WS"), ],
        aes(x = DATETIME, y = value, color = variable)) +
     geom_line()
 
 
-# dispaly precipitation as bars:
-wx_plot1 = ggplot(wx_2018_melt[wx_2018_melt$variable %in% c("TEMP", "RH"), ], aes(x = DATETIME, y = value,
-             color = variable, fill = variable)) +
-    geom_line() +
-    geom_col(data = wx_2018_melt[wx_2018_melt$variable %in% c("PRECIP"), ])
-wx_plot1
-
-# Customize labels:
-wx_plot2 = wx_plot1 +
-    labs(title = "Weather plot", x = "Date",
-         y = "Daily precipitation (mm)\nRelative humidity (%)\nAir temperature (?C)")
-wx_plot2
-
-# Customize colors and 
-wx_plot3 = wx_plot2 +
-    scale_fill_manual(values = c("red", "green", "blue"),
-                      labels = c("Precip", "RH", "Temp")) +
-    scale_color_manual(values = c("red", "green", "blue"),
-                       labels = c("Precip", "RH", "Temp"))
-wx_plot3
-
-# Place legend on the bottom:
-wx_plot4 = wx_plot3 +
-    theme(legend.position = "bottom", legend.title = element_blank())
-wx_plot4
-
-wx_plot4 +
-    guides(colour = guide_legend(override.aes=list(shape = c(18, NA, 19),
-                                                 linetype = c(0, 1, 1))))
-
-wx_plot4 +
-    guides(fill = guide_legend(override.aes = list(alpha = c(0, 1, 0.5),
-                                                   width = 0.1)),
-           linetype = guide_legend(override.aes = list(size = 2)))
 
 
 
-ggplot(data = wx_2018_melt[wx_2018_melt$variable %in% c("PRECIP", "TEMP"), ],
-       aes(x = DATETIME, y = value, fill = variable), ) +
-    geom_col() +
-    guides(fill = guide_legend(override.aes = list(alpha = c(0.2, 1))))
-
-
-ggplot(wx_2018_melt[wx_2018_melt$variable %in% c("TEMP", "RH"), ], aes(x = DATETIME, y = value,
-             color = variable, fill = variable)) +
-    geom_line() +
-    guides(linetype = guide_legend(override.aes = list(linetype = 4)))
-
-
-
-
-# the final plot can also be called like this:
-ggplot(wx_2018_melt[wx_2018_melt$variable %in% c("TEMP", "RH"), ], aes(x = DATETIME, y = value,
-             color = variable, fill = variable)) +
-    geom_line() +
-    geom_col(data = wx_2018_melt[wx_2018_melt$variable %in% c("PRECIP"), ]) +
-    labs(title = "Weather plot", x = "Date",
-         y = "Daily precipitation (mm)\nRelative humidity (%)\nAir temperature (?C)") +
-    scale_fill_manual(values= c("red", "green", "blue"),
-                      labels = c("Precip", "RH", "Temp")) +
-    scale_color_manual(values = c("red", "green", "blue"),
-                       labels = c("Precip", "RH", "Temp")) +
-    theme(legend.position = "bottom", legend.title = element_blank())
-
-# Need to add some spaces to the legend labels to make them nicer
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+######################  CREATE MULTIPLE SUBPLOTS ####################
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 
 
 
 
-#$$$$$$$$$$$$$$$
-# Can improve the legend by using
-#   show.legend = FALSE in the geom_col and adding to the plot
-#   guides(fill = guide_legend(override.aes = list(size = c(7, 1, 1))))
 
-ggplot(wx_2018_melt[wx_2018_melt$variable %in% c("TEMP", "RH"), ],
-       aes(x = DATETIME, y = value,
-             color = variable, fill = variable)) +
-    geom_line() +
-    geom_col(data = wx_2018_melt[wx_2018_melt$variable %in% c("PRECIP"), ],
-             show.legend = FALSE) +
-    labs(title = "Weather plot", x = "Date",
-         y = "Daily precipitation (mm)\nRelative humidity (%)\nAir temperature (?C)") +
-    scale_color_manual(values = c("red", "green", "blue"),
-                       labels = c(" Precip   ", " RH   ", " Temp   ")) +
-    theme(legend.position = "bottom", legend.title = element_blank()) +
-    guides(color = guide_legend(override.aes = list(size = c(7, 1, 1))))
+
+
+
+wx_all$YEAR = substr(wx_all$DATETIME, 1, 4)
+
+wx_all$MONTH = substr(wx_all$DATETIME, 6, 7)
+
+wx_all$DAY = substr(wx_all$DATETIME, 9, 10)
+
+wx_all$MONTH_DAY = as.POSIXct(gsub("\\d{4}", "0000", wx_all$DATETIME))
+
+
+
+# Combine previously made plots using grid.arrange
+
+
+# Figure out y-axis limits
+min_temp = min(wx_all[wx_all$YEAR == "2013", ]$TEMP, wx_all[wx_all$YEAR == "2014", ]$TEMP,
+    wx_all[wx_all$YEAR == "2015", ]$TEMP, wx_all[wx_all$YEAR == "2016", ]$TEMP)
+
+max_temp = max(wx_all[wx_all$YEAR == "2013", ]$TEMP, wx_all[wx_all$YEAR == "2014", ]$TEMP,
+    wx_all[wx_all$YEAR == "2015", ]$TEMP, wx_all[wx_all$YEAR == "2016", ]$TEMP)
+
+
+
+unique(wx_all$YEAR)
+
+p1 = ggplot(data = wx_all[wx_all$YEAR == "2013", ], aes(x = MONTH_DAY)) +
+    geom_line(aes(y = TEMP)) +
+    labs(title = "2013") +
+    lims(y = c(min_temp, max_temp))
+
+p2 = ggplot(data = wx_all[wx_all$YEAR == "2014", ], aes(x = MONTH_DAY)) +
+    geom_line(aes(y = TEMP)) +
+    labs(title = "2014") +
+    lims(y = c(min_temp, max_temp))
+
+p3 = ggplot(data = wx_all[wx_all$YEAR == "2015", ], aes(x = MONTH_DAY)) +
+    geom_line(aes(y = TEMP)) +
+    labs(title = "2015") +
+    lims(y = c(min_temp, max_temp))
+
+p4 = ggplot(data = wx_all[wx_all$YEAR == "2016", ], aes(x = MONTH_DAY)) +
+    geom_line(aes(y = TEMP)) +
+    labs(title = "2016") +
+    lims(y = c(min_temp, max_temp))
+
+library(gridExtra)
+
+grid.arrange(p1, p2, p3, p4) # requires gridExtra package
+
+library(grid)
+
+grid.arrange(arrangeGrob(p1 + theme(axis.title = element_blank()), 
+                         p2 + theme(axis.title = element_blank()),
+                         p3 + theme(axis.title = element_blank()),
+                         p4 + theme(axis.title = element_blank()), 
+                         nrow = 2,
+                         bottom = textGrob("Date", vjust = 0.5,
+                                           gp = gpar(fontsize = 12)),
+                         left = textGrob("Temperature (°C)", rot = 90, vjust = 0.5,
+                                           gp = gpar(fontsize = 12))), 
+    widths=unit.c(unit(1, "npc")), 
+    nrow=1) # requires grid package
+
+
+
+
+
+
+# Facet Wrap
+
+
+ggplot(data = wx_all, aes(x = MONTH_DAY)) +
+    geom_line(aes(y = TEMP)) +
+    facet_wrap(~YEAR) +
+    labs(x = "Date", y = "Temperature (°C)")
+# The x and y axis are made equal across plots by default.
+# Try inserting the following into facet_wrap(): scales = "free"
+
+
+
+
+# Smiley
+ggplot() +
+    geom_point(aes(x = c(2, 3), y = c(3, 3)), size = 2) +
+ geom_curve(aes(x = 1.5, y = 2, xend = 3.5, yend = 2)) +
+ # geom_segment(aes(x = 2, y = 2, xend = 4, yend = 2, colour = "segment")) +
+    lims(x = c(1, 4), y = c(1, 4)) +
+    coord_fixed(ratio = 1) +
+    geom_point(aes(x = 2.5, y = 2.25), shape = 25)
+
+
+
+
+
+
+
 
 
 
