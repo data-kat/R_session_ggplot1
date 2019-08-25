@@ -7,7 +7,11 @@ setwd("C:\Users\MelnikK\OneDrive - scion\Documents\1 - Workspace\R_sessions\R_se
 if(!require(ggplot2)){install.packages("ggplot2")}
 library(ggplot2)
 
-library(tidyverse)
+# library(tidyverse)
+
+library(dplyr)
+library(magrittr)
+
 library(reshape2)
 
 
@@ -77,29 +81,35 @@ testdata
 
 # ggplot() takes from zero to 2 arguments in this order: data and mapping
 ggplot(data = testdata, aes(x = my_x , y = my_y)) +
+    geom_point() +
     geom_line()
 
 # If you get the order wrong, ggplot will throw an error:
 ggplot(aes(x = my_x , y = my_y), testdata) +
+    geom_point() +
     geom_line()
 
 # can remedy this by specifying the name of each argument:
 ggplot(mapping = aes(x = my_x , y = my_y), data = testdata) +
+    geom_point() +
     geom_line()
 
 # You cannot omit the mapping/aes() argument, as it's needed for ggplot to know
 #   where the points/line are to be drawn
 ggplot(data = testdata) +
+    geom_point() +
     geom_line()
 
 # However, you can omit data argument, as long as you give the exact x an y coordinates
 #   in the aes() call:
 ggplot(mapping = aes(x = testdata$my_x, y = testdata$my_y)) +
+    geom_point() +
     geom_line()
 
 # You don't even need to refer to any dataframe at all,
 #   as long as x and y gets the same number of entries:
 ggplot(mapping = aes(x = c(1, 2), y = c(10, 20))) +
+    geom_point() +
     geom_line()
 
 
@@ -110,10 +120,25 @@ ggplot(mapping = aes(x = c(1, 2), y = c(10, 20))) +
 #   that you want to follow
 
 ggplot() +
+    geom_point(aes(x = my_x , y = my_y), testdata) +
     geom_line(aes(x = my_x , y = my_y), testdata)
 
 # Usually the easiest way is to specify things that do not change between multiple
-#   geomm in ggplot() call, and changeable things in individual geom_...() calls
+#   geoms in ggplot() call, and changeable things in individual geom_...() calls
+
+
+
+# You can also get creative :)
+ggplot() +
+    geom_point(aes(x = c(2, 3), y = c(3, 3)), size = 2) +
+    geom_point(aes(x = c(2, 3), y = c(3, 3)), size = 4.5, alpha = 0.4) +
+    geom_curve(aes(x = 1.5, y = 2, xend = 3.5, yend = 2), curvature = 0.7) +
+    geom_segment(aes(x = 1.8, y = 3.1, xend = 2.1, yend = 3.3)) +
+    geom_segment(aes(x = 2.9, y = 3.3, xend = 3.2, yend = 3.1)) +
+    lims(x = c(1, 4), y = c(1, 4)) +
+    coord_fixed(ratio = 1) +
+    geom_point(aes(x = 2.5, y = 2.25), shape = 25)
+
 
 
 
@@ -161,11 +186,16 @@ ggplot(wx_jan18) +
     theme(legend.position = "bottom")
 
 # Note1: change the name of the COLOR legend with:
-#    + labs(color = "Variables")
-# Notes2: remove the legend title with:
+#    + labs(color = "Your custom name")
+# Note2: remove the legend title with:
 #   + theme(legend.title = element_blank())
 
 # Try it here!
+
+
+
+
+
 
 # labs() allows us to change x-axis and y-axis labels, title, subtitle,
 #   and title of any legend you may have
@@ -182,14 +212,17 @@ ggplot(wx_jan18) +
     geom_line(aes(x = DATETIME, y = TEMP),
               color = "blue", linetype = 6, alpha = 0.5, lwd = 1.5)
 
+
+
+
 ####--------------------   _POINT PLOTS  --------------------####
 
 
-######## DISCUSS DIFFERENT SHAPES AND COLOR VS FILL
+######## DISCUSS DIFFERENT SHAPES, AND COLOR VS FILL
 
 # show help document with point hapes, line widths, colors, etc.
 
-# While lines only had color, points can have color and/or fill:
+# While lines only have color, points can have color and/or fill:
 ggplot() +
     geom_point(aes(x = 1, y = 1), shape = 1, size = 7, color = "blue", fill = "orange") +
     geom_point(aes(x = 2, y = 1), shape = 19, size = 7, color = "blue", fill = "orange") +
@@ -200,10 +233,13 @@ ggplot() +
 ggplot(wx_jan18) +
     geom_point(aes(x = DATETIME, y = TEMP), color = "red")
 
-# Experiment with different shapes. size and colors here
+
+# Challenge:
+# Try using different shapes, sizes and colors here
 
 
-##### GEOM_SMOOTH FOR LM LINEAR TRENDLINE
+
+##### ADDING A TRENDLINE
 
 # Adding a best-fit line to the scatterplot.
 # Note that if aesthethics are recycled, it's more efficient to place all aes() info
@@ -239,7 +275,7 @@ ggplot(wx_jan18, aes(x = DATETIME)) +
     geom_line(aes(y = PRECIP, color = "PRECIP"))
 
 
-# Or, can "melt" the dataset: reshape it from wide to long format, and group
+# Or, we can "melt" the dataset: reshape it from wide to long format, and group
 #   multiple variables of interest into a "variable" column, and their values into
 #   the "value" column:
 
@@ -252,7 +288,7 @@ ggplot(wx_jan18_melt, aes(x = DATETIME, y = value, color = variable)) +
 
 
 # Challenge:
-# Draw RH with points, precip with columns, and the rest with lines
+# Draw WD with points, precip with columns, and the rest with lines
 #   hint: it's easier using the non-melted data
 
 
@@ -282,7 +318,9 @@ ggplot(data = wx_jan18, aes(x = DATETIME)) +
     theme(legend.spacing.y = unit(0, 'cm'))
 
 
-# The legend doesn't look right... To fix it, need to do some creative things
+
+
+# The legend doesn't look right... To fix it, need to do some creative stuff
 #   - remove the fill legend by using show.legend = F in geom_col()
 #   - create a dummy geom_point for "Precip" with a point size of -Inf (makes it invisible)
 #   - overrride the linetype, shape and size of the legend element susing override.aes
@@ -317,7 +355,7 @@ ggplot(data = wx_jan18, aes(x = DATETIME)) +
 # Challenge:
 #   - Add plot title, change x axis label, y axis label, legend label.
 #   - Change color scheme
-#   - Change legend position
+#   - Place legend on top or bottom
 
 
 
@@ -328,6 +366,8 @@ ggplot(data = wx_jan18, aes(x = DATETIME)) +
 
 # Challenge:
 # Make the same plot, but for February 2018
+# Hint: refer to the end of PRE-PROCESSING WEATHER DATA section,
+#   and use square brackets to subset the wx_all dataset
 
 
 
@@ -345,6 +385,41 @@ ggplot(wx_jan18_melt[wx_jan18_melt$variable %in% c("TEMP", "RH", "WS"), ],
 
 
 
+# Scale color gradients
+
+ggplot(wx_all, aes(x = WS, y = WD, color = TEMP)) +
+    geom_point()
+
+
+# Want to change the color scheme?
+ggplot(wx_all, aes(x = WS, y = WD, color = TEMP)) +
+    geom_point() +
+    scale_color_gradientn(colours = heat.colors(10))
+
+
+ggplot(wx_all, aes(x = WS, y = WD, color = TEMP)) +
+    geom_point() +
+    scale_color_gradient(low = "blue", high = "green")
+
+ggplot(wx_all, aes(x = WS, y = WD, color = TEMP)) +
+    geom_point() +
+    scale_color_gradient2(low = "blue", mid = "orange", high = "green", midpoint = 15)
+
+
+
+ggplot(wx_all, aes(x = MONTH_ABB, y = TEMP)) +
+    geom_boxplot() +
+    stat_summary(geom = 'text', label = c("Cu", "s", "t", "o", "m", "", "Le",
+                                          "t", "t", "e", "r", "s"),
+                 fun.y = max, vjust = -0.4)
+
+
+
+ggplot(wx_all, aes(x = WD, y = TEMP)) +
+    geom_tile()
+
+
+
 
 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -352,25 +427,16 @@ ggplot(wx_jan18_melt[wx_jan18_melt$variable %in% c("TEMP", "RH", "WS"), ],
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 
-
-
-
-
-
-
+# Add some new columns to the wx_all dataset to be used later
 
 wx_all$YEAR = substr(wx_all$DATETIME, 1, 4)
-
 wx_all$MONTH = substr(wx_all$DATETIME, 6, 7)
-
-wx_all$DAY = substr(wx_all$DATETIME, 9, 10)
+wx_all$MONTH_ABB = factor(month.abb[as.numeric(wx_all$MONTH)], levels = month.abb)
 
 wx_all$MONTH_DAY = as.POSIXct(gsub("\\d{4}", "0000", wx_all$DATETIME))
 
 
-
-# Combine previously made plots using grid.arrange
-
+####-----------------   _COMBINE PLOTS WITH GRID.ARRANGE  -----------------####
 
 # Figure out y-axis limits
 min_temp = min(wx_all[wx_all$YEAR == "2013", ]$TEMP, wx_all[wx_all$YEAR == "2014", ]$TEMP,
@@ -405,10 +471,12 @@ p4 = ggplot(data = wx_all[wx_all$YEAR == "2016", ], aes(x = MONTH_DAY)) +
 
 library(gridExtra)
 
-grid.arrange(p1, p2, p3, p4) # requires gridExtra package
+grid.arrange(p1, p2, p3, p4) # grid.arrange() requires "gridExtra" package
 
 library(grid)
 
+# Remove individual axis labels, and add an= global axis label
+# Note: textGrob() requires "grid" package
 grid.arrange(arrangeGrob(p1 + theme(axis.title = element_blank()), 
                          p2 + theme(axis.title = element_blank()),
                          p3 + theme(axis.title = element_blank()),
@@ -416,37 +484,27 @@ grid.arrange(arrangeGrob(p1 + theme(axis.title = element_blank()),
                          nrow = 2,
                          bottom = textGrob("Date", vjust = 0.5,
                                            gp = gpar(fontsize = 12)),
-                         left = textGrob("Temperature (°C)", rot = 90, vjust = 0.5,
+                         left = textGrob("Temperature (?C)", rot = 90, vjust = 0.5,
                                            gp = gpar(fontsize = 12))), 
-    widths=unit.c(unit(1, "npc")), 
-    nrow=1) # requires grid package
+             widths=unit.c(unit(1, "npc")), nrow=1)
+
+# grid.arrange allows us to join any plots together, related ot not
 
 
 
 
-
-
-# Facet Wrap
-
+####-----------------   _MAKE SUBPLOTS WITH FACET_WRAP  -----------------####
 
 ggplot(data = wx_all, aes(x = MONTH_DAY)) +
     geom_line(aes(y = TEMP)) +
     facet_wrap(~YEAR) +
-    labs(x = "Date", y = "Temperature (°C)")
+    labs(x = "Date", y = "Temperature (?C)")
 # The x and y axis are made equal across plots by default.
 # Try inserting the following into facet_wrap(): scales = "free"
 
 
 
 
-# Smiley
-ggplot() +
-    geom_point(aes(x = c(2, 3), y = c(3, 3)), size = 2) +
- geom_curve(aes(x = 1.5, y = 2, xend = 3.5, yend = 2)) +
- # geom_segment(aes(x = 2, y = 2, xend = 4, yend = 2, colour = "segment")) +
-    lims(x = c(1, 4), y = c(1, 4)) +
-    coord_fixed(ratio = 1) +
-    geom_point(aes(x = 2.5, y = 2.25), shape = 25)
 
 
 
