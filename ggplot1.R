@@ -1,80 +1,59 @@
 
 
-
+# Use setwd() to specify your working directory
+#   Note: you will need to use forward slashes instead of backslashes (Wibdows default)
 setwd("C:\Users\MelnikK\OneDrive - scion\Documents\1 - Workspace\R_sessions\R_session_ggplot1")
 
 
 if(!require(ggplot2)){install.packages("ggplot2")}
+if(!require(reshape2)){install.packages("reshape2")}
+if(!require(dplyr)){install.packages("dplyr")} # part of tidyverse
+if(!require(magrittr)){install.packages("magrittr")} # part of tidyverse
+if(!require(gridExtra)){install.packages("gridExtra")}
+if(!require(grid)){install.packages("grid")}
+
 library(ggplot2)
-
-# library(tidyverse)
-
-library(dplyr)
-library(magrittr)
-
 library(reshape2)
+library(dplyr) # part of tidyverse
+library(magrittr) # part of tidyverse
+library(gridExtra)
+library(grid)
 
 
-# color gradients
-# geom_tile for fun
-# geographical data
+## Function to extract legend
+g_legend<-function(a.gplot){
+  tmp <- ggplot_gtable(ggplot_build(a.gplot))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend <- tmp$grobs[[leg]]
+  return(legend)}
 
 
 
+
+#$$$$$$$ R Studio tips: #$$$$$$$$$$
 
 # To navigate headers in this script, clip at the two little up/down arrows in
 #   the bottom-left corner of this text editor window
 # A heading gets generated when there's 4 or more "#" at the end of the line.
 # If there's no text, the heading is blank. So to simply separate out sections,
 #   I generally use one "#" and some other symbol to avoid getting a blank heading
+# To search and/or replace something, use Ctrl+F to bring up the search bar at the top
 
 
-# Talk about:
-#   - keep lines short
-#   - column names are in CAPS
-#   - 
+#$$$$$$$ Writing tips: #$$$$$$$$$$
 
-# After the first ggplot graph, talk about colors
-
-# Talk about themes
+# Keep lines short - avoid horizontal scrolling to save time
+# Column names are in CAPS (personal preference)
+# Use spaces as you would in the English language - after commas, on either side of "=", etc.
+# Leave lots of little comments - you may not remember certain details 6 months from now
 
 
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-######################  PRE-PROCESSING WEATHER DATA ####################
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-
-# Plotting weather data
-
-# Read in the weather data file
-wx_all = read.csv("Athol_wx.csv", skip = 1)
-
-# Check structure of the DATETIME column:
-str(wx_all$DATETIME)
-
-
-# Create a NEWDATETIME column, which is the same as DATETIME,
-#   but in proper datetime format
-wx_all$NEWDATETIME = as.POSIXct(wx_all$DATETIME, format = "%d/%m/%Y %H:%M")
-
-# Ensure that the NEWDATETIME has the same values as DATETIME.
-#   Then delete the DATETIME COLUMN:
-wx_all = within(wx_all, rm(DATETIME))
-
-# Rename NEWDATETIME to DATETIME:
-names(wx_all)[names(wx_all) == "NEWDATETIME"] <- "DATETIME"
-
-# Now that DATETIME is in POSIXct format, can use "<" and ">" and plot it more easily.
-
-# Subset the dataframe to only retain 2018 weather:
-wx_jan18 = wx_all[wx_all$DATETIME >= as.POSIXct("2018-01-01 00:00:00") &
-                wx_all$DATETIME < as.POSIXct("2018-02-01 00:00:00"), ]
 
 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-######################  POINT AND LINE GRAPHS ####################
+######################  GGPLOT BASICS ####################
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-####--------------------   _GGPLOT BASICS  --------------------####
 
 testdata = data.frame(my_x = c(1,2), my_y = c(20, 10))
 testdata
@@ -139,6 +118,55 @@ ggplot() +
     coord_fixed(ratio = 1) +
     geom_point(aes(x = 2.5, y = 2.25), shape = 25)
 
+
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+######################      PLOTTING REAL DATA      ####################
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+####--------------   _IMPORTING AND PREPPING REAL DATA  ------------####
+
+
+# Plotting weather data
+
+# Read in the weather data file
+wx_all = read.csv("Athol_wx.csv", skip = 1)
+
+# Check structure of the DATETIME column:
+str(wx_all$DATETIME)
+
+
+# Create a NEWDATETIME column, which is the same as DATETIME,
+#   but in proper datetime format
+wx_all$NEWDATETIME = as.POSIXct(wx_all$DATETIME, format = "%d/%m/%Y %H:%M")
+
+# Ensure that the NEWDATETIME has the same values as DATETIME.
+#   Then delete the DATETIME COLUMN:
+wx_all = within(wx_all, rm(DATETIME))
+
+# Rename NEWDATETIME to DATETIME:
+names(wx_all)[names(wx_all) == "NEWDATETIME"] <- "DATETIME"
+
+# Now that DATETIME is in POSIXct format, can use "<" and ">" and plot it more easily.
+
+# Subset the dataframe to only retain 2018 weather:
+wx_jan18 = wx_all[wx_all$DATETIME >= as.POSIXct("2018-01-01 00:00:00") &
+                wx_all$DATETIME < as.POSIXct("2018-02-01 00:00:00"), ]
+
+
+# Add some new columns to the wx_all dataset to be used later
+
+wx_all$YEAR = substr(wx_all$DATETIME, 1, 4) # extract from 1st to 4th character
+wx_all$MONTH = substr(wx_all$DATETIME, 6, 7) # extract from 6th to 7th character
+
+# Convert month number to month abbreviation
+wx_all$MONTH_ABB = factor(month.abb[as.numeric(wx_all$MONTH)], levels = month.abb)
+
+# Create a new date column hwere you substitute the year with "0000"
+#   The result is still in datetime format, but year has no effect
+#   -> can plot multiple years together
+wx_all$MONTH_DAY = as.POSIXct(gsub("\\d{4}", "0000", wx_all$DATETIME))
 
 
 
@@ -212,13 +240,14 @@ ggplot(wx_jan18) +
     geom_line(aes(x = DATETIME, y = TEMP),
               color = "blue", linetype = 6, alpha = 0.5, lwd = 1.5)
 
+# Look at the "Linetypes and point shapes.png" for linetypes
 
 
 
 ####--------------------   _POINT PLOTS  --------------------####
 
 
-######## DISCUSS DIFFERENT SHAPES, AND COLOR VS FILL
+# SHAPES, COLOR AND FILL
 
 # show help document with point hapes, line widths, colors, etc.
 
@@ -227,11 +256,15 @@ ggplot() +
     geom_point(aes(x = 1, y = 1), shape = 1, size = 7, color = "blue", fill = "orange") +
     geom_point(aes(x = 2, y = 1), shape = 19, size = 7, color = "blue", fill = "orange") +
     geom_point(aes(x = 3, y = 1), shape = 21, size = 7, color = "blue", fill = "orange")
+# Note that these different shapes react to color and fill arguments differntly
 
 
 # By default geom_point uses shape = 19
 ggplot(wx_jan18) +
     geom_point(aes(x = DATETIME, y = TEMP), color = "red")
+
+# Look at the "Linetypes and point shapes.png" for point shapes
+
 
 
 # Challenge:
@@ -239,9 +272,8 @@ ggplot(wx_jan18) +
 
 
 
-##### ADDING A TRENDLINE
+# ADDING A TRENDLINE
 
-# Adding a best-fit line to the scatterplot.
 # Note that if aesthethics are recycled, it's more efficient to place all aes() info
 #   into the main ggplot() call
 
@@ -254,6 +286,96 @@ ggplot(wx_jan18, aes(x = DATETIME, y = TEMP)) +
 ggplot(wx_jan18, aes(x = DATETIME, y = TEMP)) +
     geom_point() +
     geom_smooth(method = "lm", se = F)
+
+
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+######################  CUSTOM THEMES ####################
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+# If you don't like the default look of ggplot graphs - not a problem!
+# We can customize EVERYTHING
+
+
+# Easy shortcut to change the look is by using pre-built themes
+ggplot(wx_jan18, aes(x = DATETIME, y = TEMP, color = RH)) +
+    geom_point() +
+    labs(title = "Title", x = "X label", y ="Y label") +
+    theme_bw()
+
+
+# Note: theme_grey is the default
+
+# Challenge:
+# Try using theme_linedraw(), theme_light(), theme_dark(), theme_minimal(),
+#   theme_classic(), theme_void(), and theme_test()
+
+
+# You can also make small changes in the individual plots.
+# See https://ggplot2.tidyverse.org/reference/theme.html for all options.
+#   There are a lot...
+ggplot(wx_jan18, aes(x = DATETIME, y = TEMP, color = RH)) +
+    geom_point() +
+    labs(title = "Title", x = "X label", y ="Y label") +
+    theme(panel.background=element_rect(colour=NA,fill = "ivory2"),
+          axis.text = element_text(color = "blue"),
+          axis.title=element_text(size = 12, color = "red"),
+          legend.background = element_rect("goldenrod"),
+          panel.grid.major = element_line(color = "black"),
+          panel.grid.minor = element_line(color = "grey60"))
+
+
+
+
+
+# You can also modify your ggplot theme once, and it will apply to all plots in
+#   the current R Studio session
+# This is my custom theme:
+
+old_theme = theme_update(
+  panel.background=element_rect(colour=NA,fill = "white"),
+  axis.line = element_line(colour = "black"),
+  axis.text = element_text(size = 14),
+  axis.title=element_text(size = 16),
+  axis.title.x = element_text(margin = margin(t = 7)),
+  axis.title.y = element_text(margin = margin(r = 10)),
+  plot.title = element_text(size=20, margin = margin(t = 3, b = 20)),
+  legend.text=element_text(size = 14),
+  legend.title=element_text(size = 14),
+  text = element_text(size = 20),
+  legend.key = element_rect(fill = "white"),
+  legend.background = element_rect(fill = NA),
+  legend.position = "right",
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank())
+
+
+# Check out the new theme at work:
+ggplot(wx_jan18, aes(x = DATETIME, y = TEMP, color = RH)) +
+    geom_point() +
+    labs(title = "Title", x = "X label", y ="Y label")
+
+
+# Now, reset the theme by setting it to theme_grey (as it was originally):
+theme_set(theme_grey())
+
+ggplot(wx_jan18, aes(x = DATETIME, y = TEMP, color = RH)) +
+    geom_point() +
+    labs(title = "Title", x = "X label", y ="Y label")
+
+# Note: can set it to any of the complete themes that come with ggplot
+
+
+
+# Challenge:
+# Create your own custom theme by modifying the one above and adding to it from
+#   the list of elements at https://ggplot2.tidyverse.org/reference/theme.html
+
+
+
+
+
 
 
 
@@ -298,7 +420,7 @@ ggplot(wx_jan18_melt, aes(x = DATETIME, y = value, color = variable)) +
 
 
 # Solution:
-# melted:
+# melted data:
 ggplot(wx_jan18_melt[wx_jan18_melt$variable %in% c("TEMP", "RH", "WS"), ],
        aes(x = DATETIME, y = value,
              color = variable, fill = variable)) +
@@ -376,6 +498,132 @@ ggplot(data = wx_jan18, aes(x = DATETIME)) +
 
 
 
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+######################  CREATE MULTIPLE SUBPLOTS ####################
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+
+####-----------------   _COMBINE PLOTS WITH GRID.ARRANGE  -----------------####
+
+# We want to create a plot like the one below for the first 4 years
+ggplot(data = wx_all[wx_all$YEAR == "2013", ], aes(x = MONTH_DAY, color = RH)) +
+    geom_line(aes(y = TEMP)) +
+    labs(title = "2013") +
+    lims(y = c(min_temp, max_temp))
+
+
+# First, figure out common y-axis limits and color scale limits
+min_temp = min(wx_all[wx_all$YEAR == "2013", ]$TEMP, wx_all[wx_all$YEAR == "2014", ]$TEMP,
+    wx_all[wx_all$YEAR == "2015", ]$TEMP, wx_all[wx_all$YEAR == "2016", ]$TEMP)
+
+max_temp = max(wx_all[wx_all$YEAR == "2013", ]$TEMP, wx_all[wx_all$YEAR == "2014", ]$TEMP,
+    wx_all[wx_all$YEAR == "2015", ]$TEMP, wx_all[wx_all$YEAR == "2016", ]$TEMP)
+
+min_rh = min(wx_all[wx_all$YEAR == "2013", ]$RH, wx_all[wx_all$YEAR == "2014", ]$RH,
+    wx_all[wx_all$YEAR == "2015", ]$RH, wx_all[wx_all$YEAR == "2016", ]$RH)
+
+max_rh = max(wx_all[wx_all$YEAR == "2013", ]$RH, wx_all[wx_all$YEAR == "2014", ]$RH,
+    wx_all[wx_all$YEAR == "2015", ]$RH, wx_all[wx_all$YEAR == "2016", ]$RH)
+
+
+# Get a list of all unique years in the YEAR column
+unique(wx_all$YEAR)
+# There are 7 different years, but here we will onyl plot the first 4
+
+# Create each individual plot and save as an object:
+p1 = ggplot(data = wx_all[wx_all$YEAR == "2013", ], aes(x = MONTH_DAY, color = RH)) +
+    geom_line(aes(y = TEMP)) +
+    labs(title = "2013") +
+    lims(y = c(min_temp, max_temp), color = c(min_rh, max_rh))
+
+p2 = ggplot(data = wx_all[wx_all$YEAR == "2014", ], aes(x = MONTH_DAY, color = RH)) +
+    geom_line(aes(y = TEMP)) +
+    labs(title = "2014") +
+    lims(y = c(min_temp, max_temp), color = c(min_rh, max_rh))
+
+p3 = ggplot(data = wx_all[wx_all$YEAR == "2015", ], aes(x = MONTH_DAY, color = RH)) +
+    geom_line(aes(y = TEMP)) +
+    labs(title = "2015") +
+    lims(y = c(min_temp, max_temp), color = c(min_rh, max_rh))
+
+p4 = ggplot(data = wx_all[wx_all$YEAR == "2016", ], aes(x = MONTH_DAY, color = RH)) +
+    geom_line(aes(y = TEMP)) +
+    labs(title = "2016") +
+    lims(y = c(min_temp, max_temp), color = c(min_rh, max_rh))
+
+
+# Join the plots together:
+grid.arrange(p1, p2, p3, p4) # grid.arrange() requires "gridExtra" package
+
+
+
+# Remove individual axis labels using: theme(axis.title = element_blank()
+#   and add a global axis labels using bottom = textGrob() and left = textGrob()
+# Note: textGrob() requires "grid" package
+grid.arrange(arrangeGrob(p1 + theme(axis.title = element_blank()), 
+                         p2 + theme(axis.title = element_blank()),
+                         p3 + theme(axis.title = element_blank()),
+                         p4 + theme(axis.title = element_blank()), 
+                         nrow = 2,
+                         bottom = textGrob("Date", vjust = 0.5,
+                                           gp = gpar(fontsize = 12)),
+                         left = textGrob("Temperature (°C)", rot = 90, vjust = 0.5,
+                                           gp = gpar(fontsize = 12))), 
+             widths=unit.c(unit(1, "npc")), nrow=1)
+
+
+# The legends are repetitive.
+# Need to extract the legends from the first plot, remove all legends,
+#   and then paste the extracted legend on the right side
+
+
+
+
+mylegend = g_legend(p1) # NOTE: g_legend is a custom function at the top of this script!
+
+# Remove legends from individual plots using: legend.position = "none",
+#   and add our extracted legend on the right using: right = mylegend
+grid.arrange(arrangeGrob(p1 + theme(axis.title = element_blank(), legend.position = "none"), 
+                         p2 + theme(axis.title = element_blank(), legend.position = "none"),
+                         p3 + theme(axis.title = element_blank(), legend.position = "none"),
+                         p4 + theme(axis.title = element_blank(), legend.position = "none"), 
+                         nrow = 2,
+                         bottom = textGrob("Date", vjust = 0.5,
+                                           gp = gpar(fontsize = 12)),
+                         left = textGrob("Temperature (°C)", rot = 90, vjust = 0.5,
+                                           gp = gpar(fontsize = 12)),
+                         right = mylegend), 
+             widths=unit.c(unit(1, "npc")), nrow=1)
+
+
+
+
+# Summary: grid.arrange allows us to join any plots together, related or not
+
+
+
+
+####-----------------   _MAKE SUBPLOTS WITH FACET_WRAP  -----------------####
+
+ggplot(data = wx_all, aes(x = MONTH_DAY, color = RH)) +
+    geom_line(aes(y = TEMP)) +
+    facet_wrap(~YEAR) +
+    labs(x = "Date", y = "Temperature (°C)")
+# The x and y axis are made equal across plots by default.
+# Try inserting the following into facet_wrap(): scales = "free"
+
+
+# Summary: facet_wrap is easier to use, but is not nearly as flexible
+
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+######################  ADDITIONAL STUFF ####################
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+
+
 # Subset the dataset to only plot selected variables
 
 # Only plot temp, RH and wind speed:
@@ -385,7 +633,7 @@ ggplot(wx_jan18_melt[wx_jan18_melt$variable %in% c("TEMP", "RH", "WS"), ],
 
 
 
-# Scale color gradients
+# USING A CONTINUOUS COLOR SCALE
 
 ggplot(wx_all, aes(x = WS, y = WD, color = TEMP)) +
     geom_point()
@@ -395,12 +643,16 @@ ggplot(wx_all, aes(x = WS, y = WD, color = TEMP)) +
 ggplot(wx_all, aes(x = WS, y = WD, color = TEMP)) +
     geom_point() +
     scale_color_gradientn(colours = heat.colors(10))
+# The other built-in palettes are rainbow() and topo.colors()
+# there are also great packages that provide more options (e.g. viridis)
 
 
+# Alternatively, can use scale_color_gradient to specify low and high colors:
 ggplot(wx_all, aes(x = WS, y = WD, color = TEMP)) +
     geom_point() +
     scale_color_gradient(low = "blue", high = "green")
 
+# Or, use scale_color_gradient2 (note the 2!) to specify low, mid and high colors:
 ggplot(wx_all, aes(x = WS, y = WD, color = TEMP)) +
     geom_point() +
     scale_color_gradient2(low = "blue", mid = "orange", high = "green", midpoint = 15)
@@ -421,98 +673,18 @@ ggplot(wx_all, aes(x = WD, y = TEMP)) +
 
 
 
+# End of the material for now
 
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-######################  CREATE MULTIPLE SUBPLOTS ####################
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-
-
-# Add some new columns to the wx_all dataset to be used later
-
-wx_all$YEAR = substr(wx_all$DATETIME, 1, 4)
-wx_all$MONTH = substr(wx_all$DATETIME, 6, 7)
-wx_all$MONTH_ABB = factor(month.abb[as.numeric(wx_all$MONTH)], levels = month.abb)
-
-wx_all$MONTH_DAY = as.POSIXct(gsub("\\d{4}", "0000", wx_all$DATETIME))
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 
-####-----------------   _COMBINE PLOTS WITH GRID.ARRANGE  -----------------####
-
-# Figure out y-axis limits
-min_temp = min(wx_all[wx_all$YEAR == "2013", ]$TEMP, wx_all[wx_all$YEAR == "2014", ]$TEMP,
-    wx_all[wx_all$YEAR == "2015", ]$TEMP, wx_all[wx_all$YEAR == "2016", ]$TEMP)
-
-max_temp = max(wx_all[wx_all$YEAR == "2013", ]$TEMP, wx_all[wx_all$YEAR == "2014", ]$TEMP,
-    wx_all[wx_all$YEAR == "2015", ]$TEMP, wx_all[wx_all$YEAR == "2016", ]$TEMP)
-
-
-
-unique(wx_all$YEAR)
-
-p1 = ggplot(data = wx_all[wx_all$YEAR == "2013", ], aes(x = MONTH_DAY)) +
-    geom_line(aes(y = TEMP)) +
-    labs(title = "2013") +
-    lims(y = c(min_temp, max_temp))
-
-p2 = ggplot(data = wx_all[wx_all$YEAR == "2014", ], aes(x = MONTH_DAY)) +
-    geom_line(aes(y = TEMP)) +
-    labs(title = "2014") +
-    lims(y = c(min_temp, max_temp))
-
-p3 = ggplot(data = wx_all[wx_all$YEAR == "2015", ], aes(x = MONTH_DAY)) +
-    geom_line(aes(y = TEMP)) +
-    labs(title = "2015") +
-    lims(y = c(min_temp, max_temp))
-
-p4 = ggplot(data = wx_all[wx_all$YEAR == "2016", ], aes(x = MONTH_DAY)) +
-    geom_line(aes(y = TEMP)) +
-    labs(title = "2016") +
-    lims(y = c(min_temp, max_temp))
-
-library(gridExtra)
-
-grid.arrange(p1, p2, p3, p4) # grid.arrange() requires "gridExtra" package
-
-library(grid)
-
-# Remove individual axis labels, and add an= global axis label
-# Note: textGrob() requires "grid" package
-grid.arrange(arrangeGrob(p1 + theme(axis.title = element_blank()), 
-                         p2 + theme(axis.title = element_blank()),
-                         p3 + theme(axis.title = element_blank()),
-                         p4 + theme(axis.title = element_blank()), 
-                         nrow = 2,
-                         bottom = textGrob("Date", vjust = 0.5,
-                                           gp = gpar(fontsize = 12)),
-                         left = textGrob("Temperature (?C)", rot = 90, vjust = 0.5,
-                                           gp = gpar(fontsize = 12))), 
-             widths=unit.c(unit(1, "npc")), nrow=1)
-
-# grid.arrange allows us to join any plots together, related ot not
-
-
-
-
-####-----------------   _MAKE SUBPLOTS WITH FACET_WRAP  -----------------####
-
-ggplot(data = wx_all, aes(x = MONTH_DAY)) +
-    geom_line(aes(y = TEMP)) +
-    facet_wrap(~YEAR) +
-    labs(x = "Date", y = "Temperature (?C)")
-# The x and y axis are made equal across plots by default.
-# Try inserting the following into facet_wrap(): scales = "free"
-
-
-
-
-
-
-
-
-
-
-
-
+# geom_tile for fun
+# geographical data
 
 
 
@@ -700,9 +872,6 @@ ggplot(data = dat1[dat1$YEAR == 1950 & dat1$PLOT == "e1q1-1", ],
 # Wind roses
 
 
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-# Subplots
-
 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 # saving plots
@@ -710,12 +879,6 @@ ggplot(data = dat1[dat1$YEAR == 1950 & dat1$PLOT == "e1q1-1", ],
 # fancy styling in x labels
 
 
-#$$$$$$$$$$$$$$$$$
-# ggplot themes
-
-
-#$$$$$$$$$$$$$$$$$$$$
-# Colors
 
 
 
