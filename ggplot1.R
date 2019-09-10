@@ -181,6 +181,7 @@ wx_jan18 = wx_all[wx_all$DATETIME >= as.POSIXct("2018-01-01 00:00:00") &
 
 wx_all$YEAR = substr(wx_all$DATETIME, 1, 4) # extract from 1st to 4th character
 wx_all$MONTH = substr(wx_all$DATETIME, 6, 7) # extract from 6th to 7th character
+wx_all$DAY = substr(wx_all$DATETIME, 9, 10) # extract from 9th to 10th character
 
 # Convert month number to month abbreviation
 wx_all$MONTH_ABB = factor(month.abb[as.numeric(wx_all$MONTH)], levels = month.abb)
@@ -526,54 +527,13 @@ ggplot(data = wx_jan18, aes(x = DATETIME)) +
 #*************************************************************************
 
 
-####--------------   _IMPORTING AND PREPPING REAL DATA (same as in the last session)  ------------####
-
-# Read in the weather data file
-wx_all = read.csv("Athol_wx.csv", skip = 1)
-
-# Check structure of the DATETIME column:
-str(wx_all$DATETIME)
-
-
-# Create a NEWDATETIME column, which is the same as DATETIME,
-#   but in proper datetime format
-wx_all$NEWDATETIME = as.POSIXct(wx_all$DATETIME, format = "%d/%m/%Y %H:%M")
-
-# Ensure that the NEWDATETIME has the same values as DATETIME.
-#   Then delete the DATETIME COLUMN:
-wx_all = within(wx_all, rm(DATETIME))
-
-# Rename NEWDATETIME to DATETIME:
-names(wx_all)[names(wx_all) == "NEWDATETIME"] <- "DATETIME"
-
-# Now that DATETIME is in POSIXct format, can use "<" and ">" and plot it more easily.
-
-# Subset the dataframe to only retain 2018 weather:
-wx_jan18 = wx_all[wx_all$DATETIME >= as.POSIXct("2018-01-01 00:00:00") &
-                    wx_all$DATETIME < as.POSIXct("2018-02-01 00:00:00"), ]
-
-
-# Add some new columns to the wx_all dataset to be used later
-
-wx_all$YEAR = substr(wx_all$DATETIME, 1, 4) # extract from 1st to 4th character
-wx_all$MONTH = substr(wx_all$DATETIME, 6, 7) # extract from 6th to 7th character
-
-# Convert month number to month abbreviation
-wx_all$MONTH_ABB = factor(month.abb[as.numeric(wx_all$MONTH)], levels = month.abb)
-
-# Create a new date column hwere you substitute the year with "0000"
-#   The result is still in datetime format, but year has no effect
-#   -> can plot multiple years together
-wx_all$MONTH_DAY = as.POSIXct(gsub("\\d{4}", "0000", wx_all$DATETIME))
-
-
 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-######################      SUBSETTING DATAFRAMES    ####################
+######################      SUBSETTING OVERVIEW     ####################
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-# Subsetting or slicing vectors and dataframes means retrieving only parts of interest.
-# It's easy to do using square barckets
+# Subsetting or slicing vectors and dataframes means retrieving only the parts
+# that are of interest. It's easy to do using square barckets
 
 
 ####--------------   _SUBSETTING VECTORS  ------------####
@@ -630,9 +590,76 @@ mydf[mydf$FRUIT_TYPE == "berry", ] # don't forget the comma!
 # Select only column FRUIT and COST:
 mydf[, c("FRUIT", "COST")]
 
-# Select 
+# List fruits that cost less than $5:
+mydf[mydf$COST < 5, "FRUIT"]
+
+# Select rows where cost is either 2 or 8 dollars:
+mydf[mydf$COST %in% c(2, 8), ]
 
 
+# Challenge1:
+# Create a smaller dataframe that only contains rows where FRUIT_TYPE is berry or drupe
+
+
+
+
+
+
+# Challenge2:
+# Get the cost of the eggplant
+
+
+
+
+
+
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#####################   _IMPORTING AND PREPPING REAL DATA   ############
+#$$$$$$$$$$$$$$$$$$$$    (same as in the last session)      $$$$$$$$$$$$
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+
+# Read in the weather data file
+wx_all = read.csv("Athol_wx.csv", skip = 1)
+
+# Check structure of the DATETIME column:
+str(wx_all$DATETIME)
+
+
+# Create a NEWDATETIME column, which is the same as DATETIME,
+#   but in proper datetime format
+wx_all$NEWDATETIME = as.POSIXct(wx_all$DATETIME, format = "%d/%m/%Y %H:%M")
+
+# Ensure that the NEWDATETIME has the same values as DATETIME.
+#   Then delete the DATETIME COLUMN:
+wx_all = within(wx_all, rm(DATETIME))
+
+# Rename NEWDATETIME to DATETIME:
+names(wx_all)[names(wx_all) == "NEWDATETIME"] <- "DATETIME"
+
+# Now that DATETIME is in POSIXct format, can use "<" and ">" and plot it more easily.
+
+# Subset the dataframe to only retain 2018 weather:
+wx_jan18 = wx_all[wx_all$DATETIME >= as.POSIXct("2018-01-01 00:00:00") &
+                    wx_all$DATETIME < as.POSIXct("2018-02-01 00:00:00"), ]
+
+
+# Add some new columns to the wx_all dataset to be used later
+
+wx_all$YEAR = substr(wx_all$DATETIME, 1, 4) # extract from 1st to 4th character
+wx_all$MONTH = substr(wx_all$DATETIME, 6, 7) # extract from 6th to 7th character
+wx_all$DAY = substr(wx_all$DATETIME, 9, 10) # extract from 9th to 10th character
+
+
+# Convert month number to month abbreviation
+wx_all$MONTH_ABB = factor(month.abb[as.numeric(wx_all$MONTH)], levels = month.abb)
+
+# Create a new date column hwere you substitute the year with "0000"
+#   The result is still in datetime format, but year has no effect
+#   -> can plot multiple years together
+wx_all$MONTH_DAY = as.POSIXct(gsub("\\d{4}", "0000", wx_all$DATETIME))
 
 
 
@@ -829,10 +856,7 @@ ggplot(data = wx_2years, aes(x = TEMP, color = MONTH_ABB)) +
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 
-
-
-
-# REVISITING A CONTINUOUS COLOR SCALE FROM THE SECTION ABOVE
+# REVISITING CONTINUOUS COLOR SCALE FROM THE SECTION ABOVE
 
 ggplot(wx_all, aes(x = WS, y = WD, color = TEMP)) +
     geom_point()
@@ -849,7 +873,7 @@ ggplot(wx_all, aes(x = WS, y = WD, color = TEMP)) +
 # Or, use scale_color_gradient2 (note the 2!) to specify low, mid and high colors:
 ggplot(wx_all, aes(x = WS, y = WD, color = TEMP)) +
     geom_point() +
-    scale_color_gradient2(low = "blue4", mid = "red", high = "yellow", midpoint = 15)
+    scale_color_gradient2(low = "black", mid = "blue3", high = "magenta", midpoint = 15)
 
 
 # Another option is to use pre-built color palettes
@@ -865,27 +889,121 @@ ggplot(wx_all, aes(x = WS, y = WD, color = TEMP)) +
 
 
 
+
+# rainbow() function can takes additional argument such as start and end:
+ggplot(wx_all, aes(x = WS, y = WD, color = TEMP)) +
+    geom_point() +
+    scale_color_gradientn(colours = rainbow(10, start = 1/6, end = 5/6))
+
+# Can reverse any color scale (or any vector for that matter) using rev() function:
+ggplot(wx_all, aes(x = WS, y = WD, color = TEMP)) +
+    geom_point() +
+    scale_color_gradientn(colours = rev(rainbow(10, start = 1/6, end = 5/6)))
+
+
+
+
 # there are also great packages that provide more options (e.g. viridis)
 if(!require(viridis))install.packages("viridis")
 library(viridis)
 
 ggplot(wx_all, aes(x = WS, y = WD, color = TEMP)) +
     geom_point() +
-    scale_color_gradientn(colours = cividis(10))
+    scale_color_gradientn(colours = viridis(10))
 
-# Can also try magma, plasma, inferno, cividis pallettes fro mthe viridis package
-
-
-
+# Challenge:
+# Try using magma, plasma, inferno, cividis pallettes from the viridis package
 
 
 
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+######################    BOXPLOTS AND BAR PLOTS   ####################
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+
+####-----------------   _BOXPLOTS  -----------------####
+
+# Simple bar plot of temperature by month:
+ggplot(wx_all, aes(x = MONTH_ABB, y = TEMP)) +
+    geom_boxplot()
+
+
+# Could add geom_jitter to see the actual distribution of poitn overlaid overtop
+#   (not that useful in thsi case)
 ggplot(wx_all, aes(x = MONTH_ABB, y = TEMP)) +
     geom_boxplot() +
-    stat_summary(geom = 'text', label = c("Cu", "s", "t", "o", "m", "", "Le",
-                                          "t", "t", "e", "r", "s"),
-                 fun.y = max, vjust = -0.4)
+    geom_jitter(alpha = 0.2, color = "blue")
 
+# For smaller datasets, geom_dotplot might be useful:
+wx_small = wx_all[wx_all$DAY == "01", ]
+
+ggplot(wx_small, aes(x = MONTH_ABB, y = TEMP)) +
+    geom_boxplot() +
+    geom_dotplot(binaxis = "y", stackdir = "center", alpha = 0.5, fill = "blue", dotsize = 0.7)
+
+
+
+# Can use stat_summary to find the maximum value in each category, and put the label there:
+ggplot(wx_all, aes(x = MONTH_ABB, y = TEMP)) +
+    geom_boxplot() +
+    stat_summary(geom = 'text', label = c("Cu", "s", "t", "o", "m", "", "L",
+                                          "a", "b", "e", "l", "s"),
+                 fun.y = max, vjust = -0.4, color = "blue2")
+
+
+####-----------------   _BAR PLOTS  -----------------####
+
+# Lets try making a barplot using geom_col:
+ggplot(wx_small, aes(x = YEAR, y = TEMP)) +
+    geom_col()
+# It shows the "total" temperature occuring in each year, Doesn't make much sense
+
+# It's actually stacking every observation form every day on top of each other... To visualize:
+ggplot(wx_small, aes(x = YEAR, y = TEMP, fill = MONTH_ABB)) +
+    geom_col() 
+  
+
+# To avoid this behavior, and to calculate the average temperature instead,
+#   can use position = "dodge":
+ggplot(wx_all, aes(x = YEAR, y = TEMP)) +
+    geom_col(position = "dodge")
+
+# Adding fill factor here will actually place multiple months side-by-side within each year
+ggplot(wx_all, aes(x = YEAR, y = TEMP, fill = MONTH_ABB)) +
+    geom_col(position = "dodge")
+
+# Lets try stacking the observations instead
+ggplot(wx_all, aes(x = YEAR, y = TEMP, fill = MONTH_ABB)) +
+    geom_col(position = "stack")
+
+
+# In order to make a "typical" bar chart with error bars, use stat_summary:
+ggplot(wx_small, aes(x = MONTH_ABB, y = TEMP)) +
+  stat_summary(geom = "col", fun.y = mean, position = "dodge") +
+  stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge")
+
+
+# Can try to use stat summary to nicely alighn text labels:
+ggplot(wx_small, aes(x = MONTH_ABB, y = TEMP)) +
+  stat_summary(geom = "col", fun.y = mean) +
+  stat_summary(geom = "errorbar", fun.data = mean_se) +
+  stat_summary(geom = "text", fun.y = max, color = "blue3",
+               label = c("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"))
+
+# That didn't work... We can summarize the data by hand and try again
+
+sum_small = summarize(group_by(wx_small, MONTH_ABB), TEMP_MEAN = mean(TEMP, na.rm = T),
+                  TEMP_SE = sd(TEMP, na.rm = T)/sqrt(n()))
+
+# Lets try not using stat_summary at all this time, and see if we can make the same plot
+#   But eith better label positioning
+ggplot(sum_small, aes(x = MONTH_ABB, y = TEMP_MEAN)) +
+  geom_col() +
+  geom_errorbar(aes(ymin = TEMP_MEAN-TEMP_SE, ymax = TEMP_MEAN+TEMP_SE)) +
+  geom_text(aes(y = TEMP_MEAN+TEMP_SE), color = "blue3",
+               label = c("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"))
 
 
 ggplot(wx_all, aes(x = WD, y = TEMP)) +
