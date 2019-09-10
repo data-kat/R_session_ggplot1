@@ -992,7 +992,8 @@ ggplot(wx_small, aes(x = MONTH_ABB, y = TEMP)) +
   stat_summary(geom = "text", fun.y = max, color = "blue3",
                label = c("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"))
 
-# That didn't work... We can summarize the data by hand and try again
+# I'd liek to place the labels right above the error bars...
+#   We can summarize the data by hand for that
 
 sum_small = summarize(group_by(wx_small, MONTH_ABB), TEMP_MEAN = mean(TEMP, na.rm = T),
                   TEMP_SE = sd(TEMP, na.rm = T)/sqrt(n()))
@@ -1003,11 +1004,83 @@ ggplot(sum_small, aes(x = MONTH_ABB, y = TEMP_MEAN)) +
   geom_col() +
   geom_errorbar(aes(ymin = TEMP_MEAN-TEMP_SE, ymax = TEMP_MEAN+TEMP_SE)) +
   geom_text(aes(y = TEMP_MEAN+TEMP_SE), color = "blue3",
-               label = c("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"))
+               label = c("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"), vjust = -0.5)
+# Perfect
 
 
-ggplot(wx_all, aes(x = WD, y = TEMP)) +
-    geom_tile()
+
+
+####-----------------   _WIND RSOE USING GEOM_COL -----------------####
+
+# First, need to convert degrees to cardinal directions (we'll breask it up into 16 directions)
+
+# Create a vector with the 16 letter directions in proper order:
+mydir = c("N","NNE", "NE", "NEE", "E", "SEE", "SE", "SSE", "S",
+                  "SSW", "SW", "SWW", "W", "NWW", "NW", "NNW", "N")
+
+# Convert degrees to letter directions:
+wx_small$WD_LET = mydir[round(wx_small$WD/(360/16)) + 1]
+
+# Assign order to the letter directions:
+wx_small$WD_LET = factor(wx_small$WD_LET, levels = unique(mydir))
+
+# Now we are ready to plot!
+ggplot(wx_small, aes(x = WD_LET, y = 1, fill = WS)) +
+  geom_col()
+# Hm, the colors are all over the place
+
+# Can order the dataframe by WS_KH in increasing order before plotting it:
+wx_small_ordered = wx_small[order(wx_small$WS, decreasing = F), ]
+
+ggplot(wx_small_ordered, aes(x = WD_LET, y = 1, fill = WS)) +
+  geom_col()
+# Looks good! But where is the rose?
+
+# Add coord_polar
+ggplot(wx_small_ordered, aes(x = WD_LET, y = 1, fill = WS)) +
+    geom_col() +
+    coord_polar(start = -((22.5/2))/180 * pi)
+
+# Prettify the plot a bit:
+ggplot(wx_small_ordered, aes(x = WD_LET, y = 1, fill = WS)) +
+    geom_col() +
+    coord_polar(start = -((22.5/2))/180 * pi) +
+    scale_fill_gradientn(colours = terrain.colors(10)) +
+  labs(y = "Number of observations") +
+    theme_light() +
+    theme(axis.title.x = element_blank())
+
+
+
+# For large datasets this would be inefficient, as each individual observation gets plotted separately.
+#   To make the computer's task easier, can sumamrize the dataset first, and calculate the size of each
+#   stacked bar addition
+
+wx_sum_wind1 = summarize(group_by(wx_all[!is.na(wx_all$WD_LET), ], WD_LET, WS), COUNT = n())
+wx_sum_wind1_ordered = wx_sum_wind1[order(wx_sum_wind1$WS, decreasing = F), ]
+
+
+ggplot(wx_sum_wind1_ordered, aes(x = WD_LET, y = COUNT, fill = WS)) +
+    geom_col() +
+    coord_polar(start = -((22.5/2))/180 * pi) +
+    scale_fill_gradientn(colours = terrain.colors(10)) +
+    theme_light()
+
+# Could also calculate relative frequency of occurence:
+wx_sum_wind2 = mutate(group_by(wx_sum_wind1_ordered, WS), TOTAL = n(), FREQ = COUNT/TOTAL)
+
+ggplot(wx_sum_wind2, aes(x = WD_LET, y = FREQ, fill = WS)) +
+    geom_col() +
+    coord_polar(start = -((22.5/2))/180 * pi) +
+    scale_fill_gradientn(colours = terrain.colors(10)) +
+    theme_light()
+
+
+
+
+
+
+
 
 
 
@@ -1022,8 +1095,6 @@ ggplot(wx_all, aes(x = WD, y = TEMP)) +
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 
-# geom_tile for fun
-# geographical data
 
 
 
@@ -1177,12 +1248,6 @@ ggplot(data = dat1[dat1$YEAR == 1950 & dat1$PLOT == "e1q1-1", ],
     transition_reveal(ID)
 
 
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-# Try plotting some basic geographical data
-
-
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-# Line plots
 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 # Box plot
@@ -1207,9 +1272,6 @@ ggplot(data = dat1[dat1$YEAR == 1950 & dat1$PLOT == "e1q1-1", ],
 
 
 
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-# Wind roses
-
 
 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -1217,6 +1279,11 @@ ggplot(data = dat1[dat1$YEAR == 1950 & dat1$PLOT == "e1q1-1", ],
 
 # fancy styling in x labels
 
+# Geom_tile
+ggplot(wx_small, aes(x = WD, y = TEMP)) +
+    geom_tile()
+
+# geographical data
 
 
 
