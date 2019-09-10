@@ -1,14 +1,10 @@
 
 
-
-# HIGHLIGHT AND RUN THE CODE UP UNTIL THE FIRST SECTION
-
-
-
 # If you are not working in a version control R Studio Project,
 #  You will need to use setwd() to specify your working directory
-#   Note: you will need to use forward slashes instead of backslashes (Wibdows default)
-setwd("C:\Users\MelnikK\OneDrive - scion\Documents\1 - Workspace\R_sessions\R_session_ggplot1")
+#   Note: you will need to use forward slashes instead of backslashes (Wibdows default),
+#   and remove the "#" at teh beginning of the line
+#setwd("C:\Users\OneDrive - scion\Documents\1 - Workspace\R_sessions\R_session_ggplot1")
 
 
 if(!require(ggplot2)){install.packages("ggplot2")}
