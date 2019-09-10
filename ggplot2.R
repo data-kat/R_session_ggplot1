@@ -1,8 +1,49 @@
+
 #*************************************************************************
 #*************************************************************************
 #               ** GGPLOT SESSION 2 (11 SEPTEMBER 2019) **            ####
 #*************************************************************************
 #*************************************************************************
+
+
+
+
+# If you are not working in a version control R Studio Project,
+#  You will need to use setwd() to specify your working directory
+#   Note: you will need to use forward slashes instead of backslashes (Wibdows default),
+#   and remove the "#" at teh beginning of the line
+#setwd("C:\Users\OneDrive - scion\Documents\1 - Workspace\R_sessions\R_session_ggplot1")
+
+
+if(!require(ggplot2)){install.packages("ggplot2")}
+if(!require(reshape2)){install.packages("reshape2")}
+if(!require(dplyr)){install.packages("dplyr")} # part of tidyverse
+if(!require(magrittr)){install.packages("magrittr")} # part of tidyverse
+if(!require(gridExtra)){install.packages("gridExtra")}
+if(!require(grid)){install.packages("grid")}
+
+library(ggplot2)
+library(reshape2)
+library(dplyr) # part of tidyverse
+library(magrittr) # part of tidyverse
+library(gridExtra)
+library(grid)
+
+
+# Set a desired ggplot theme:
+theme_set(theme_classic())
+
+
+
+
+## Function to extract legend
+g_legend<-function(a.gplot){
+  tmp <- ggplot_gtable(ggplot_build(a.gplot))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend <- tmp$grobs[[leg]]
+  return(legend)}
+
+
 
 
 
