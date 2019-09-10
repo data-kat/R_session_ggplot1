@@ -568,6 +568,71 @@ wx_all$MONTH_DAY = as.POSIXct(gsub("\\d{4}", "0000", wx_all$DATETIME))
 
 
 
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+######################      SUBSETTING DATAFRAMES    ####################
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+# Subsetting or slicing vectors and dataframes means retrieving only parts of interest.
+# It's easy to do using square barckets
+
+
+####--------------   _SUBSETTING VECTORS  ------------####
+
+# Vectors are one-dimensional, and take only ONE index or ONE list of indeces for subsetting
+
+# Basic syntax for vectors:
+#   myvector[indices_to_keep]. Let's try a few examples.
+
+#Create a vector:
+myvector = c("a", "b", "c", "d", "a", "c")
+
+# Select the first item:
+myvector[1]
+
+# Select items 3 to 4 (inclusive):
+myvector[3:4]
+
+# Select items 2 and 4 (note that the list of indices has to be in a vector of their own to work):
+myvector[c(2, 4)]
+
+# Now lets try subsetting based on value. Select all items that are equal to "a":
+myvector[myvector == "a"]
+
+# Next, select all items that are equal to "b" or "c":
+myvector[myvector == "b" | myvector == "c"] # method 1
+myvector[myvector %in% c("b", "c")] # method 2
+
+
+####--------------   _SUBSETTING DATAFRAMES  ------------####
+
+# Dataframes are two-dimensional, and need TWO indeces or TWO lists of indeces for subsetting
+
+# Basic syntax for dataframes:
+#   mydataset[indices_of_rows_to_keep, indices_of_columns_to_keep].
+
+# Create a dataframe:
+mydf = data.frame(FRUIT = c("apple", "orange", "pear", "cherry", "eggplant"),
+                  FRUIT_TYPE = c("pome", "berry", "pome", "drupe", "berry"),
+                  COST = c(2, 3, 3, 15, 8))
+
+# Select the value in the first row and first column:
+mydf[1, 1]
+
+# Select all values in the first row:
+mydf[1, ]
+
+# Select all values in the first column:
+mydf[ , 1]
+
+# Select all rows where FRUIT_TYPE is a berry:
+mydf[mydf$FRUIT_TYPE == "berry", ] # don't forget the comma!
+
+# Select only column FRUIT and COST:
+mydf[, c("FRUIT", "COST")]
+
+# Select 
+
+
 
 
 
@@ -585,23 +650,16 @@ ggplot(data = wx_all[wx_all$YEAR == "2013", ], aes(x = WS, color = TEMP)) +
 
 
 # First, figure out common y-axis limits and color scale limits
-min_ws = min(wx_all[wx_all$YEAR == "2013", ]$WD, wx_all[wx_all$YEAR == "2014", ]$WD,
-    wx_all[wx_all$YEAR == "2015", ]$WD, wx_all[wx_all$YEAR == "2016", ]$WD)
 
-max_ws = max(wx_all[wx_all$YEAR == "2013", ]$WD, wx_all[wx_all$YEAR == "2014", ]$WD,
-    wx_all[wx_all$YEAR == "2015", ]$WD, wx_all[wx_all$YEAR == "2016", ]$WD)
+value_ranges0 = summarize(group_by(wx_all[wx_all$YEAR %in% c(2013, 2014, 2015, 2016), ], YEAR),
+          WS_MIN = min(WS, na.rm = T), WS_MAX = max(WS, na.rm = T),
+          WD_MIN = min(WD, na.rm = T), WD_MAX = max(WD, na.rm = T),
+          TEMP_MIN = min(TEMP, na.rm = T), TEMP_MAX = max(TEMP, na.rm = T))
 
-min_wd = min(wx_all[wx_all$YEAR == "2013", ]$WD, wx_all[wx_all$YEAR == "2014", ]$WD,
-    wx_all[wx_all$YEAR == "2015", ]$WD, wx_all[wx_all$YEAR == "2016", ]$WD)
-
-max_wd = max(wx_all[wx_all$YEAR == "2013", ]$WD, wx_all[wx_all$YEAR == "2014", ]$WD,
-    wx_all[wx_all$YEAR == "2015", ]$WD, wx_all[wx_all$YEAR == "2016", ]$WD)
-
-min_temp = min(wx_all[wx_all$YEAR == "2013", ]$TEMP, wx_all[wx_all$YEAR == "2014", ]$TEMP,
-    wx_all[wx_all$YEAR == "2015", ]$TEMP, wx_all[wx_all$YEAR == "2016", ]$TEMP)
-
-max_temp = max(wx_all[wx_all$YEAR == "2013", ]$TEMP, wx_all[wx_all$YEAR == "2014", ]$TEMP,
-    wx_all[wx_all$YEAR == "2015", ]$TEMP, wx_all[wx_all$YEAR == "2016", ]$TEMP)
+value_ranges = summarize(group_by(value_ranges0),
+          WS_MIN = min(WS_MIN, na.rm = T), WS_MAX = max(WS_MAX, na.rm = T),
+          WD_MIN = min(WD_MIN, na.rm = T), WD_MAX = max(WD_MAX, na.rm = T),
+          TEMP_MIN = min(TEMP_MIN, na.rm = T), TEMP_MAX = max(TEMP_MAX, na.rm = T))
 
 
 # Get a list of all unique years in the YEAR column
@@ -612,22 +670,23 @@ unique(wx_all$YEAR)
 p1 = ggplot(data = wx_all[wx_all$YEAR == "2013", ], aes(x = WS, color = TEMP)) +
     geom_point(aes(y = WD)) +
     labs(title = "2013") +
-    lims(x = c(min_ws, max_ws), y = c(min_wd, max_wd), color = c(min_temp, max_temp))
+    lims(x = c(value_ranges$WS_MIN, value_ranges$WS_MAX), y = c(value_ranges$WD_MIN, value_ranges$WD_MAX),
+         color = c(value_ranges$TEMP_MIN, value_ranges$TEMP_MAX))
 
 p2 = ggplot(data = wx_all[wx_all$YEAR == "2014", ], aes(x = WS, color = TEMP)) +
     geom_point(aes(y = WD)) +
     labs(title = "2014") +
-    lims(x = c(min_ws, max_ws), y = c(min_wd, max_wd), color = c(min_temp, max_temp))
+    lims(x = c(value_ranges$WS_MIN, value_ranges$WS_MAX), y = c(value_ranges$WD_MIN, value_ranges$WD_MAX), color = c(value_ranges$TEMP_MIN, value_ranges$TEMP_MAX))
 
 p3 = ggplot(data = wx_all[wx_all$YEAR == "2015", ], aes(x = WS, color = TEMP)) +
     geom_point(aes(y = WD)) +
     labs(title = "2015") +
-    lims(x = c(min_ws, max_ws), y = c(min_wd, max_wd), color = c(min_temp, max_temp))
+    lims(x = c(value_ranges$WS_MIN, value_ranges$WS_MAX), y = c(value_ranges$WD_MIN, value_ranges$WD_MAX), color = c(value_ranges$TEMP_MIN, value_ranges$TEMP_MAX))
 
 p4 = ggplot(data = wx_all[wx_all$YEAR == "2016", ], aes(x = WS, color = TEMP)) +
     geom_point(aes(y = WD)) +
     labs(title = "2016") +
-    lims(x = c(min_ws, max_ws), y = c(min_wd, max_wd), color = c(min_temp, max_temp))
+    lims(x = c(value_ranges$WS_MIN, value_ranges$WS_MAX), y = c(value_ranges$WD_MIN, value_ranges$WD_MAX), color = c(value_ranges$TEMP_MIN, value_ranges$TEMP_MAX))
 
 
 # Join the plots together:
@@ -690,9 +749,9 @@ ggplot(data = wx_all, aes(x = WS, color = TEMP)) +
     facet_wrap(~YEAR) +
     labs(x = "Wind speed (m/s)", y = "Wind direction (°)")
 
-# The x and y axis are made equal across plots by default.
+# The x and y axis are made equal across plots by default, and all years are plotted by default
 
-# Challenge:
+# Challenge1:
 # Try inserting the following into facet_wrap(): scales = "free"
 # Also, try specifying the number of rows or the number of columns inside facet_wrap()
 #   with ncol = ... or nrow = ...
@@ -701,12 +760,13 @@ ggplot(data = wx_all, aes(x = WS, color = TEMP)) +
 
 
 
-# By default all years are plotted. Lets subset the dataset to only choose the first four.
-#   Square brackets are often used for subsetting. The syntax is mydataset[rows-to-keep, columns-to-keep].
-# In plain English, I want to:
-#   create a new dataset called wx_4years, which will only contain some records of the wx_all dataset,
-#   in particular it will only keep the rows where YEAR equals one of 2013, 2014, 2015, 2016.
-#   Also, it will keep all columns:
+# Challenge:
+# Subset the dataset to only plot years 2013, 2014, 2015 and 2016
+# Hint: use square brackets and %in%
+
+
+
+# Solution:
 wx_4years = wx_all[wx_all$YEAR %in% c(2013, 2014, 2015, 2016), ]
 
 ggplot(data = wx_4years, aes(x = WS, color = TEMP)) +
