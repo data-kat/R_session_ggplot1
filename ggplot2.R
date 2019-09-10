@@ -90,30 +90,31 @@ myvector[myvector %in% c("b", "c")] # method 2
 #   mydataset[indices_of_rows_to_keep, indices_of_columns_to_keep].
 
 # Create a dataframe:
-mydf = data.frame(FRUIT = c("apple", "orange", "pear", "cherry", "eggplant"),
-                  FRUIT_TYPE = c("pome", "berry", "pome", "drupe", "berry"),
-                  COST = c(2, 3, 3, 15, 8))
+fruit_df = data.frame(FRUIT = c("apple", "orange", "pear", "cherry", "eggplant", "apple", "apple", "plum"),
+                  FRUIT_TYPE = c("pome", "berry", "pome", "drupe", "berry", "pome", "pome", "drupe"),
+                  COST = c(2, 3, 3, 15, 8, 3, 1, 3),
+                  RATING = c(2, 2, 3, 5, 4, NA, 1, NA))
 
 # Select the value in the first row and first column:
-mydf[1, 1]
+fruit_df[1, 1]
 
 # Select all values in the first row:
-mydf[1, ]
+fruit_df[1, ]
 
 # Select all values in the first column:
-mydf[ , 1]
+fruit_df[ , 1]
 
 # Select all rows where FRUIT_TYPE is a berry:
-mydf[mydf$FRUIT_TYPE == "berry", ] # don't forget the comma!
+fruit_df[fruit_df$FRUIT_TYPE == "berry", ] # don't forget the comma!
 
 # Select only column FRUIT and COST:
-mydf[, c("FRUIT", "COST")]
+fruit_df[, c("FRUIT", "COST")]
 
 # List fruits that cost less than $5:
-mydf[mydf$COST < 5, "FRUIT"]
+fruit_df[fruit_df$COST < 5, "FRUIT"]
 
 # Select rows where cost is either 2 or 8 dollars:
-mydf[mydf$COST %in% c(2, 8), ]
+fruit_df[fruit_df$COST %in% c(2, 8), ]
 
 
 # Challenge1:
@@ -125,11 +126,37 @@ mydf[mydf$COST %in% c(2, 8), ]
 
 
 # Challenge2:
-# Get the cost of the eggplant
+# Get the cost of an eggplant
 
 
 
 
+
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+######################      SUMMARIZE/MUTATE OVERVIEW     ####################
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+# Create a smaller summary dataframe, which will be condensed to show
+#   each FRUIT_TYPE category only once, and the mean cost associated with it:
+summarize(group_by(fruit_df, FRUIT_TYPE), MEAN_COST = mean(COST))
+
+# Now, let's retain the original dataframe, and add a colum nto it, which
+#   will show the mean cost of the FRUIT_TYPE against each fruit belonging to it.
+#   This will result in mean cost being repeated for fruits of the smae type
+mutate(group_by(fruit_df, FRUIT_TYPE), MEAN_COST = mean(COST))
+
+
+# Inside the sumamrize or mutate function, you can create multiple columns:
+summarize(group_by(fruit_df, FRUIT_TYPE), MEAN_COST = mean(COST), MIN_COST = min(COST),
+          MEAN_RATING = mean(RATING))
+
+# There are issue with the MEAN_RATING column because of NAs.
+#   When using mean(), min(), and max() functions, it's a good idea to ignore NAs if they
+# are enountered. Can do that using na.rm = T
+summarize(group_by(fruit_df, FRUIT_TYPE), MEAN_COST = mean(COST), MIN_COST = min(COST),
+          MEAN_RATING = mean(RATING, na.rm = T))
 
 
 
@@ -195,17 +222,13 @@ ggplot(data = wx_all[wx_all$YEAR == "2013", ], aes(x = WS, color = TEMP)) +
     labs(title = "2013")
 
 
-# First, figure out common y-axis limits and color scale limits
+# First, figure out common x and y-axis limits and color scale limits
+#   (WS, WD and TEMP)
 
-value_ranges0 = summarize(group_by(wx_all[wx_all$YEAR %in% c(2013, 2014, 2015, 2016), ], YEAR),
+value_ranges = summarize(group_by(wx_all[wx_all$YEAR %in% c(2013, 2014, 2015, 2016), ]),
           WS_MIN = min(WS, na.rm = T), WS_MAX = max(WS, na.rm = T),
           WD_MIN = min(WD, na.rm = T), WD_MAX = max(WD, na.rm = T),
           TEMP_MIN = min(TEMP, na.rm = T), TEMP_MAX = max(TEMP, na.rm = T))
-
-value_ranges = summarize(group_by(value_ranges0),
-          WS_MIN = min(WS_MIN, na.rm = T), WS_MAX = max(WS_MAX, na.rm = T),
-          WD_MIN = min(WD_MIN, na.rm = T), WD_MAX = max(WD_MAX, na.rm = T),
-          TEMP_MIN = min(TEMP_MIN, na.rm = T), TEMP_MAX = max(TEMP_MAX, na.rm = T))
 
 
 # Get a list of all unique years in the YEAR column
@@ -479,7 +502,8 @@ ggplot(wx_small, aes(x = YEAR, y = TEMP)) +
     geom_col()
 # It shows the "total" temperature occuring in each year, Doesn't make much sense
 
-# It's actually stacking every observation form every day on top of each other... To visualize:
+# The plot above is actually stacking every observation form every day on top of each other...
+#   To demonstarte this:
 ggplot(wx_small, aes(x = YEAR, y = TEMP, fill = MONTH_ABB)) +
     geom_col() 
   
@@ -493,7 +517,7 @@ ggplot(wx_all, aes(x = YEAR, y = TEMP)) +
 ggplot(wx_all, aes(x = YEAR, y = TEMP, fill = MONTH_ABB)) +
     geom_col(position = "dodge")
 
-# Lets try stacking the observations instead
+# Lets try stacking the observations instead (the default behavior)
 ggplot(wx_all, aes(x = YEAR, y = TEMP, fill = MONTH_ABB)) +
     geom_col(position = "stack")
 
@@ -504,21 +528,20 @@ ggplot(wx_small, aes(x = MONTH_ABB, y = TEMP)) +
   stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge")
 
 
-# Can try to use stat summary to nicely alighn text labels:
+# Can try to use stat summary to nicely align text labels:
 ggplot(wx_small, aes(x = MONTH_ABB, y = TEMP)) +
   stat_summary(geom = "col", fun.y = mean) +
   stat_summary(geom = "errorbar", fun.data = mean_se) +
   stat_summary(geom = "text", fun.y = max, color = "blue3",
                label = c("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"))
+# I'd like to place the labels right above the error bars, rather than at the maximum observation.
 
-# I'd liek to place the labels right above the error bars...
-#   We can summarize the data by hand for that
-
+# We can summarize the data by hand for that:
 sum_small = summarize(group_by(wx_small, MONTH_ABB), TEMP_MEAN = mean(TEMP, na.rm = T),
                   TEMP_SE = sd(TEMP, na.rm = T)/sqrt(n()))
 
-# Lets try not using stat_summary at all this time, and see if we can make the same plot
-#   But eith better label positioning
+# Lets try not using stat_summary at all this time, and see if we can make the same plot,
+#   but with better label positioning:
 ggplot(sum_small, aes(x = MONTH_ABB, y = TEMP_MEAN)) +
   geom_col() +
   geom_errorbar(aes(ymin = TEMP_MEAN-TEMP_SE, ymax = TEMP_MEAN+TEMP_SE)) +
@@ -529,7 +552,7 @@ ggplot(sum_small, aes(x = MONTH_ABB, y = TEMP_MEAN)) +
 
 
 
-####-----------------   _WIND RSOE USING GEOM_COL -----------------####
+####-----------------   _WIND ROSE USING GEOM_COL -----------------####
 
 # First, need to convert degrees to cardinal directions (we'll breask it up into 16 directions)
 
@@ -575,6 +598,9 @@ ggplot(wx_small_ordered, aes(x = WD_LET, y = 1, fill = WS)) +
 #   To make the computer's task easier, can sumamrize the dataset first, and calculate the size of each
 #   stacked bar addition
 
+# Convert degrees to letter directions, and assign levels to it:
+wx_all$WD_LET = factor(mydir[round(wx_all$WD/(360/16)) + 1], levels = unique(mydir))
+
 wx_sum_wind1 = summarize(group_by(wx_all[!is.na(wx_all$WD_LET), ], WD_LET, WS), COUNT = n())
 wx_sum_wind1_ordered = wx_sum_wind1[order(wx_sum_wind1$WS, decreasing = F), ]
 
@@ -586,11 +612,20 @@ ggplot(wx_sum_wind1_ordered, aes(x = WD_LET, y = COUNT, fill = WS)) +
     theme_light()
 
 # Could also calculate relative frequency of occurence:
-wx_sum_wind2 = mutate(group_by(wx_sum_wind1_ordered, WS), TOTAL = n(), FREQ = COUNT/TOTAL)
+wx_sum_wind2 = mutate(group_by(wx_sum_wind1_ordered), TOTAL = n(), FREQ = COUNT/TOTAL)
 
 ggplot(wx_sum_wind2, aes(x = WD_LET, y = FREQ, fill = WS)) +
     geom_col() +
     coord_polar(start = -((22.5/2))/180 * pi) +
     scale_fill_gradientn(colours = terrain.colors(10)) +
     theme_light()
+
+
+
+
+
+
+
+
+
 
