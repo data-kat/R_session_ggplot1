@@ -221,6 +221,7 @@ gorse=getKMLcoordinates("Burn_envelope.kml",
 gorse1.sr = SpatialPolygons(list(Polygons(list(Polygon(gorse[1])), "x")))
 gorse2.sr = SpatialPolygons(list(Polygons(list(Polygon(gorse[5])), "x")))
 
+
 plot(gorse1.sr)
 plot(gorse2.sr)
 
@@ -343,6 +344,16 @@ plot(test)
 
 writeRaster(test, "writeRaster_output", format = "GTiff")
 
+
+
+#$$
+plot(test)
+plot(gorse1.sr,add=TRUE)
+
+rr <- mask(test, gorse1.sr)
+plot(rr);plot(gorse1.sr, add=TRUE)
+
+writeRaster(rr, "writeRaster_mask", format = "GTiff")
 
 
 
