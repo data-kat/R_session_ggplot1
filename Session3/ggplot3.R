@@ -11,11 +11,11 @@
 
 # If you are not working in a version control R Studio Project,
 #  You will need to use setwd() to specify your working directory
-#   Note: you will need to use forward slashes instead of backslashes (Wibdows default),
-#   and remove the "#" at teh beginning of the line
+#   Note: you will need to use forward slashes instead of backslashes (Windows default),
+#   and remove the "#" at the beginning of the line
 #setwd("C:\Users\OneDrive - scion\Documents\1 - Workspace\R_sessions\R_session_ggplot1")
 
-# If you are working inside a project, jsut specify the subfolder you'll be working from
+# If you are working inside a project, just specify the subfolder you'll be working from
 setwd("./Session3")
 
 
