@@ -1,0 +1,1396 @@
+#FROM GITHUB
+# install.packages("devtools")
+devtools::install_github("cwickham/geospatial")
+
+library(geospatial)
+library(ggplot2)
+library(ggmap)
+
+data(sales) # Chapter 1 sales data
+head(sales)
+
+ggplot(sales, aes(lon, lat)) + 
+  geom_point()
+
+# Grabbing a background map
+# 
+# There are two steps to adding a map to a ggplot2 plot with ggmap:
+#   
+#   Download a map using get_map()
+# Display the map using ggmap()
+# As an example, let's grab a map for New York City:
+# 
+# library(ggmap)
+# 
+# # nyc <- c(lon = -74.0059, lat = 40.7128)
+# # nyc_map <- get_map(location = nyc, zoom = 10)
+# # get_map() has a number of arguments that control what kind of map to get, but for now you'll mostly stick with the defaults. 
+# The most important argument is the first, location, where you can provide a longitude and latitude pair of coordinates 
+# where you want the map centered. (We found these for NYC from a quick google search of "coordinates nyc".) 
+# The next argument, zoom, takes an integer between 3 and 21 and controls how far the mapped is zoomed in.
+# In this exercise, you'll set a third argument, scale, equal to 1. This controls the resolution of the downloaded maps 
+# and you'll set it lower (the default is 2) to reduce how long it takes for the downloads.
+# 
+# Displaying the map is then as simple as calling ggmap() with your downloaded map as the only argument: ggmap(nyc_map)
+# 
+# Your turn! We are going to be looking at house sales in Corvallis, but you probably have no idea where that is! Let's find out.
+
+height <- max(sales$lat) - min(sales$lat)
+width <- max(sales$lon) - min(sales$lon)
+sac_borders <- c(bottom  = min(sales$lat)  - 0.1 * height, 
+                 top     = max(sales$lat)  + 0.1 * height,
+                 left    = min(sales$lon) - 0.1 * width,
+                 right   = max(sales$lon) + 0.1 * width)
+
+corvallis_map <- get_stamenmap(sac_borders, zoom = 13, scale = 1, maptype = "toner-lite")
+
+
+# 
+# 
+# Putting it all together
+# 
+# You now have a nice map of Corvallis, but how do you put the locations of the house sales on top?
+#   
+#   Similar to ggplot(), you can add layers of data to a ggmap() call (e.g. + geom_point()). It's important to note, 
+# however, that ggmap() sets the map as the default dataset and also sets the default aesthetic mappings.
+# 
+# This means that if you want to add a layer from something other than the map (e.g. sales), you need to explicitly 
+# specify both the mapping and data arguments to the geom.
+# 
+# What does this look like? You've seen how you might make a basic plot of the sales:
+#   
+#   ggplot(sales, aes(lon, lat)) + 
+#   geom_point()
+# An equivalent way to specify the same plot is:
+#   
+#   ggplot() + 
+#   geom_point(aes(lon, lat), data = sales)
+# 
+# Here, we've specified the data and mapping in the call to geom_point() rather than ggplot(). The benefit of 
+# specifying the plot this way is you can swap out ggplot() for a call to ggmap() and get a map in the background of the plot.
+
+
+# Swap out call to ggplot() with call to ggmap()
+ggmap(corvallis_map) +
+  geom_point(aes(lon, lat), data = sales)
+
+# Insight through aesthetics
+# 
+# Adding a map to your plot of sales explains some of the structure in the data: there are no house sales East of 
+# the Willamette River or on the Oregon State University campus. This structure is really just a consequence of where houses 
+# are in Corvallis; you can't have a house sale where there are no houses!
+# 
+# The value of displaying data spatially really comes when you add other variables to the display through the properties of your
+# geometric objects, like color or size. You already know how to do this with ggplot2 plots: add additional mappings to the aesthetics of the geom.
+# 
+# Let's see what else you can learn about these houses in Corvallis.
+# 
+# NOTE: Many exercises in this course will require you to create more than one plot. You can toggle between plots with the arrows 
+# at the bottom of the 'Plots' window and zoom in on a plot by clicking the arrows on the tab at the top of the 'Plots' window.
+
+# Map color to year_built
+ggmap(corvallis_map) +
+  geom_point(aes(lon, lat, color = year_built), data = sales)
+
+# Map size to bedrooms
+ggmap(corvallis_map) +
+  geom_point(aes(lon, lat, size = bedrooms), data = sales)
+
+# Map color to price / finished_squarefeet
+ggmap(corvallis_map) +
+  geom_point(
+    aes(lon, lat, color = price / finished_squarefeet), 
+    data = sales
+  )
+
+# Different maps
+# 
+# The default Google map downloaded by get_map() is useful when you need major roads, basic terrain, and places of interest, 
+# but visually it can be a little busy. You want your map to add to your data, not distract from it, so it can be useful to 
+# have other "quieter" options.
+# 
+# Sometimes you aren't really interested in the roads and places, but more what's on the ground (e.g. grass, trees, desert, or snow), 
+# in which case switching to a satellite view might be more useful. You can get Google satellite images by changing the maptype 
+# argument to "satellite".
+# 
+# You can grab Stamen Maps by using source = "stamen" in get_map(), along with specifying a maptype argument. You can see all 
+# possible values for the maptype argument by looking at ?get_map, but they correspond closely to the "flavors" described on the 
+# Stamen Maps site. I like the "toner" variations, as they are greyscale and a bit simpler than the Google map.
+# 
+# Let's try some other maps for your plot of house sales.
+
+#syntax for looking at different type of OSM and Stamen maps
+?get_map
+
+corvallis <- c(lon = -123.2620, lat = 44.5646)
+
+# Add a maptype argument to get a satellite map
+corvallis_map_bw <- get_stamenmap(sac_borders, zoom = 13, maptype = "toner", source = "stamen") #Also very good
+corvallis_map1 <- get_stamenmap(sac_borders, zoom = 13, maptype = "terrain") #best so far
+corvallis_map2 <- get_stamenmap(sac_borders, zoom = 13, maptype = "terrain-background")
+
+ggmap(corvallis_map_bw)
+ggmap(corvallis_map1)
+ggmap(corvallis_map2)
+
+
+# Edit to get display satellite map
+ggmap(corvallis_map1) +
+  geom_point(aes(lon, lat, color = year_built), data = sales)
+
+# # Leveraging ggplot2's strengths
+# # You've seen you can add layers to a ggmap() plot by adding geom_***() layers and specifying the data and mapping explicitly, 
+# but this approach has two big downsides: further layers also need to specify the data and mappings, and facetting won't work at all.
+# # 
+# # Luckily ggmap() provides a way around these downsides: the base_layer argument. You can pass base_layer a normal ggplot() call 
+# that specifies the default data and mappings for all layers.
+# # 
+# # For example, the initial plot:
+# # 
+# # ggmap(corvallis_map) +
+# #   geom_point(data = sales, aes(lon, lat))
+# # could have instead been:
+# # 
+# # ggmap(corvallis_map, 
+# #     base_layer = ggplot(sales, aes(lon, lat))) +
+# #   geom_point()
+# # By moving aes(x, y) and data from the initial geom_point() function to the ggplot() call within the ggmap() call, you can add
+# facets, or extra layers, the usual ggplot2 way.
+# # 
+# # Let's try it out.
+
+
+# Use base_layer argument to ggmap() to specify data and x, y mappings
+ggmap(corvallis_map1, base_layer = ggplot(sales, aes(lon, lat))) +
+  geom_point(aes(color = year_built))
+
+# Use base_layer argument to ggmap() and add facet_wrap()
+ggmap(corvallis_map1, base_layer = ggplot(sales, aes(lon, lat))) +
+  geom_point(aes(color = class)) +
+  facet_wrap(~ class)
+
+# A quick alternative
+# 
+# ggmap also provides a quick alternative to ggmap(). Like qplot() in ggplot2, qmplot() is less flexible than a
+# full specification, but often involves significantly less typing. qmplot() replaces both steps -- downloading 
+# the map and displaying the map -- and its syntax is a blend between qplot(), get_map(), and ggmap().
+# 
+# Let's take a look at the qmplot() version of the faceted plot from the previous exercise:
+# 
+# qmplot(lon, lat, data = sales, 
+#        geom = "point", color = class) +
+#   facet_wrap(~ class)
+# 
+# Notice we didn't specify a map, since qmplot() will grab one on its own. Otherwise the qmplot() call looks a lot 
+# like the corresponding qplot() call: use points to display the sales data, mapping lon to the x-axis, lat to the y-axis, 
+# and class to color. qmplot() also sets the default dataset and mapping (without the need for base_layer) so you can add 
+# facets without any extra work.
+
+# Plot house sales using qmplot()
+qmplot(lon, lat, data = sales, geom = "point", color = bedrooms) +
+  facet_wrap(~ month)
+
+# Drawing polygons
+# 
+# A choropleth map describes a map where polygons are colored according to some variable. In the ward_sales data frame,
+# you have information on the house sales summarised to the ward level. Your goal is to create a map where each ward is 
+# colored by one of your summaries: the number of sales or the average sales price.
+# 
+# In the data frame, each row describes one point on the boundary of a ward. The lon and lat variables describe its location 
+# and ward describes which ward it belongs to, but what are group and order?
+#   
+#   Remember the two tricky things about polygons? An area may be described by more than one polygon and order matters. group 
+# is an identifier for a single polygon, but a ward may be composed of more than one polygon, so you would see more than one 
+# value of group for such a ward. order describes the order in which the points should be drawn to create the correct shapes.
+# 
+# In ggplot2, polygons are drawn with geom_polygon(). Each row of your data is one point on the boundary and points are joined
+# up in the order in which they appear in the data frame. You specify which variables describe position using the x and y 
+# aesthetics and which points belong to a single polygon using the group aesthetic.
+# 
+# This is a little tricky, so before you make your desired plot, let's explore this a little more.
+
+
+# Add a point layer with color mapped to ward
+ggplot(ward_sales, aes(lon, lat)) +
+  geom_point(aes(color = ward))
+
+
+# Add a point layer with color mapped to group
+ggplot(ward_sales, aes(lon, lat)) +
+  geom_point(aes(color = group))
+
+
+# Add a path layer with group mapped to group
+ggplot(ward_sales, aes(lon, lat)) +
+  geom_path(aes(group = group))
+
+# Add a polygon layer with fill mapped to ward, and group to group
+ggplot(ward_sales, aes(lon, lat)) +
+  geom_polygon(aes(group = group, fill = ward))
+
+# Choropleth map
+# 
+# Now that you understand drawing polygons, let's get your polygons on a map. Remember, you replace your ggplot() 
+# call with a ggmap() call and the original ggplot() call moves to the base_layer() argument, then you add your 
+# polygon layer as usual:
+# 
+# ggmap(corvallis_map_bw,
+#       base_layer = ggplot(ward_sales,
+#                           aes(lon, lat))) +
+#   geom_polygon(aes(group = group, fill = ward))
+# Try it out in the console now!
+# 
+# Uh oh, things don't look right. Wards 1, 3 and 8 look jaggardy and wrong. What's happened? Part of the ward 
+# boundaries are beyond the map boundary. Due to the default settings in ggmap(), any data off the map is dropped before 
+# plotting, so some polygon boundaries are dropped and when the remaining points are joined up you get the wrong shapes.
+# 
+# Don't worry, there is a solution: ggmap() provides some arguments to control this behaviour. Arguments extent = "normal" 
+# along with maprange = FALSE force the plot to use the data range rather than the map range to define the plotting boundaries.
+
+
+# Fix the polygon cropping
+ggmap(corvallis_map1, 
+      base_layer = ggplot(ward_sales, aes(lon, lat)),
+      extent = "normal", maprange = FALSE) +
+  geom_polygon(aes(group = group, fill = ward))
+
+# Repeat, but map fill to num_sales
+ggmap(corvallis_map1, 
+      base_layer = ggplot(ward_sales, aes(lon, lat)),
+      extent = "normal", maprange = FALSE) +
+  geom_polygon(aes(group = group, fill = num_sales))
+
+# Repeat again, but map fill to avg_price
+ggmap(corvallis_map1, 
+      base_layer = ggplot(ward_sales, aes(lon, lat)),
+      extent = "normal", maprange = FALSE) +
+  geom_polygon(aes(group = group, fill = avg_price), alpha = 0.8)
+
+# 
+# Raster data as a heatmap
+# 
+# The predicted house prices in preds are called raster data: you have a variable measured (or in this case predicted) 
+# at every location in a regular grid.
+# 
+# Looking at head(preds) in the console, you can see the lat values stepping up in intervals of about 0.002, as lon is constant. 
+# After 40 rows, lon increases by about 0.003, as lat runs through the same values. For each lat/lon location, you also have a 
+# predicted_price. You'll see later in Chapter 3, that a more useful way to think about (and store) this kind of data is in a matrix.
+# 
+# When data forms a regular grid, one approach to displaying it is as a heatmap. geom_tile() in ggplot2 draws a rectangle that
+# is centered on each location that fills the space between it and the next location, in effect tiling the whole space. 
+# By mapping a variable to the fill aesthetic, you end up with a heatmap.
+
+
+# Add a geom_point() layer
+ggplot(preds, aes(lon, lat)) +
+  geom_point()
+
+# Add a tile layer with fill mapped to predicted_price
+ggplot(preds, aes(lon, lat)) +
+  geom_tile(aes(fill = predicted_price))
+
+
+# Use ggmap() instead of ggplot()
+ggmap(corvallis_map_bw) +
+  geom_tile(aes(lon, lat, fill = predicted_price), 
+            data = preds, alpha = 0.8)
+
+# Let's take a look at a spatial object
+# 
+# We've loaded a particular sp object into your workspace: countries_sp. There are special print(), summary() and plot() 
+# methods for these objects. What's a method? It's a special version of a function that gets used based on the type of object
+# you pass to it. It's common when a package creates new types of objects for it to contain methods for simple exploration and display.
+# 
+# In practice, this means you can call plot(countries_sp) and if there is a method for the class of countries_sp, it gets called. 
+# The print() method is the one called when you just type an object's name in the console.
+# 
+# Can you figure out what kind of object this countries_sp is? Can you see what coordinate system this spatial data uses? 
+#   What does the data in the object describe?
+
+library(sp)
+
+# Print countries_sp
+print(countries_sp)
+
+# Call summary() on countries_sp
+summary(countries_sp)
+
+# Call plot() on countries_sp
+plot(countries_sp)
+
+# What's inside a spatial object?
+# 
+# What did you learn about the methods in the previous exercise? print() gives a printed form of the object, but 
+# it is often too long and not very helpful. summary() provides a much more concise description of the object, including 
+# its class (in this case SpatialPolygons), the extent of the spatial data, and the coordinate reference system information 
+# (you'll learn more about this in Chapter 4). plot() displays the contents, in this case drawing a map of the world.
+# 
+# But, how is that information stored in the SpatialPolygons object? In this exercise you'll explore the structure of this object.
+# You already know about using str() to look at R objects, but what you might not know is that it takes an optional argument max.level
+# that restricts how far down the hierarchy of the object str() prints. This can be useful to limit how much information you have to
+# handle.
+# 
+# Let's see if you can get a handle on how this object is structured.
+
+# Call str() on countries_sp
+str(countries_sp)
+
+# Call str() on countries_sp with max.level = 2
+str(countries_sp, max.level = 2)
+
+
+# A more complicated spatial object
+# 
+# You probably noticed something a little different about the structure of countries_sp. It looked a lot like a list, 
+# but instead of the elements being proceeded by $ in the output they were instead proceeded by an @. This is because the sp classes 
+# are S4 objects, so instead of having elements they have slots and you access them with @. You'll learn more about this in the next
+# video.
+# 
+# Right now, let's take a look at another object countries_spdf. It's a little more complicated than countries_sp, but you are now 
+# well-equipped to figure out how this object differs.
+
+# Take a look!
+
+# Call summary() on countries_spdf and countries_sp
+summary(countries_spdf)
+summary(countries_sp)
+
+# Call str() with max.level = 2 on countries_spdf
+str(countries_spdf, max.level = 2)
+
+# Plot countries_spdf
+plot(countries_spdf)
+
+# Walking the hierarchy
+# 
+# Let's practice accessing slots by exploring the way polygons are stored inside SpatialDataFrame objects. Remember there are two ways to access slots in an S4 object:
+# 
+# x@slot_name # or...
+# slot(x, "slot_name")
+# So, to take a look at the polygons slot of countries_spdf you simply do countries_spdf@polygons. You can try it, but you'll get a long and not very informative output. Let's look at the high level structure instead.
+# 
+# Try running the following code in the console:
+# 
+# str(countries_spdf@polygons, max.level = 2)
+# Still a pretty long output, but scroll back to the top and take a look. What kind of object is this? It's just a list, but inside its elements are another kind of sp class: Polygons. There are 177 list elements. Any guesses what they might represent?
+#   
+#   Let's dig into one of these elements.
+
+
+# 169th element of countries_spdf@polygons: one
+one <- countries_spdf@polygons[[169]]
+
+# Print one
+one
+
+# Call summary() on one
+summary(one)
+
+# Call str() on one with max.level = 2
+str(one, max.level = 2)
+
+
+# Further down the rabbit hole
+# 
+# In the last exercise, the SpatialPolygonsDataFrame had a list of Polygons in its polygons slot, and each of those Polygons objects also had a Polygons slot. So, many polygons...but you aren't at the bottom of the hierarchy yet!
+# 
+# Let's take another look at the 169th element in the Polygons slot of countries_spdf. Run this code from the previous exercise:
+#   
+#   one <- countries_spdf@polygons[[169]]
+# str(one, max.level = 2)
+# The Polygons slot has a list inside with 10 elements. What are these objects? Let's keep digging....
+
+one <- countries_spdf@polygons[[169]]
+
+# str() with max.level = 2, on the Polygons slot of one
+str(one@Polygons, max.level = 2)
+
+# str() with max.level = 2, on the 6th element of the one@Polygons
+str(one@Polygons[[6]], max.level = 2)
+
+# Call plot on the coords slot of 6th element of one@Polygons
+plot(one@Polygons[[6]]@coords)
+
+
+# Subsetting by index
+
+# The subsetting of Spatial___DataFrame objects is built to work like subsetting a data frame. You think about subsetting the data frame, but in practice what is returned is a new Spatial___DataFrame with only the rows of data you want and the corresponding spatial objects.
+# 
+# The simplest kind of subsetting is by index. For example, if x is a data frame you know x[1, ] returns the first row. If x is a Spatial___DataFrame, you get a new Spatial___DataFrame that contains the first row of data and the spatial data that correspond to that row.
+# 
+# The benefit of returning a Spatial___DataFrame is you can use all the same methods as on the object before subsetting.
+# 
+# Let's test it out on the 169th country!
+
+# Subset the 169th object of countries_spdf: usa
+usa <- countries_spdf[169, ]
+
+# Look at summary() of usa
+summary(usa)
+
+# Look at str() of usa
+str(usa, max.level = 2)
+
+# Call plot() on usa
+plot(usa)
+plot(countries_spdf[121, ])
+
+
+# Accessing data in sp objects
+# 
+# It's quite unusual to know exactly the indices of elements you want to keep, and far more likely you want to subset based on data attributes. You've seen the data associated with a Spatial___DataFrame lives in the data slot, but you don't normally access this slot directly.
+# 
+# Instead,$ and [[ subsetting on a Spatial___DataFrame pulls columns directly from the data frame. That is, if x is a Spatial___DataFrame object, then either x$col_name or x[["col_name"]] pulls out the col_name column from the data frame. Think of this like a shortcut; instead of having to pull the right column from the object in the data slot (i.e. x@data$col_name), you can just use x$col_name.
+# 
+# Let's start by confirming the object in the data slot is just a regular data frame, then practice pulling out columns.
+
+# Call head() and str() on the data slot of countries_spdf
+head(countries_spdf@data)
+str(countries_spdf@data)
+
+# Pull out the name column using $
+countries_spdf$name
+
+# Pull out the subregion column using [[
+countries_spdf[["subregion"]]
+
+# Subsetting based on data attributes
+# 
+# Subsetting based on data attributes is a combination of creating a logical from the columns of your data frame and subsetting the Spatial___DataFrame object. This is similar to how you subset an ordinary data frame.
+# 
+# Create a logical from a column, let's say countries in Asia:
+# 
+# in_asia <- countries_spdf$region == "Asia"
+# in_asia
+# Then, use the logical to select rows of the Spatial___DataFrame object:
+# 
+# countries_spdf[in_asia, ]
+# Can you subset out New Zealand and plot it?
+
+# Create logical vector: is_nz
+is_nz <- countries_spdf$name == "New Zealand"
+
+# Subset countries_spdf using is_nz: nz
+nz <- countries_spdf[is_nz, ]
+
+# Plot nz
+plot(nz)
+
+# tmap, a package that works with sp objects
+# 
+# You've had to learn quite a few new things just to be able to understand and do basic manipulation of these spatial objects 
+# defined by sp, but now you get to experience some payoff! There are a number of neat packages that expect spatial data in sp 
+# objects and which make working with spatial data easy.
+# 
+# Let's take a look at the tmap package for creating maps. You'll learn more about its philosophy and structure in the next video,
+# but first we want you to see how easy it is to use.
+# 
+# tmap has the qtm() function for quick thematic maps. It follows the ideas of qplot() from ggplot2 but with a couple of important
+# differences. Instead of expecting data in a data frame like ggplot2(), it expects data in a spatial object and uses the argument
+# shp to specify it. Another important difference is that tmap doesn't use non-standard evaluation (see the Writing Functions in R 
+# course for more about this), so variables need to be surrounded by quotes when specifying mappings.
+# 
+# Try this example in the console:
+#   
+#   library(tmap)
+# qtm(shp = countries_spdf, fill = "population")
+# How easy was that!? Can you make a choropleth of another variable contained in countries_spdf: gdp?
+
+library(tmap)
+qtm(shp = countries_spdf, fill = "population")
+
+
+library(sp)
+library(tmap)
+
+# Use qtm() to create a choropleth map of gdp
+qtm(shp = countries_spdf, fill = "gdp")
+
+
+# Building a plot in layers
+# 
+# Now that you know a bit more about tmap(), let's build up your previous plot of population in layers and make 
+# a few tweaks to improve it. You start with a tm_shape() layer that defines the data you want to use, then add a 
+# tm_fill() layer to color-in your polygons using the variable population:
+# 
+# tm_shape(countries_spdf) +
+#   tm_fill(col = "population") 
+# Probably the biggest problem with the resulting plot is that the color scale isn't very informative: the first color 
+# (palest yellow) covers all countries with population less than 200 million! Since the color scale is associated with the 
+# tm_fill() layer, tweaks to this scale happen in this call. You'll learn a lot more about color in Chapter 3, but for now,
+# know that the style argument controls how the breaks are chosen.
+# 
+# Your plot also needs some country outlines. You can add a tm_borders() layer for this, but let's not make them too visually
+# strong. Perhaps a brown would be nice.
+# 
+# The benefit of using spatial objects becomes really clear when you switch the kind of plot you make. Let's also try a 
+# bubble plot where the size of the bubbles correspond to population. If you were using ggplot2, this would involve a 
+# ot of reshaping of your data. With tmap, you just switch out a layer.
+
+library(sp)
+library(tmap)
+
+# Add style = "quantile" to tm_fill(). This chooses the breaks in the color 
+# scale based on equal numbers of observations in each interval.
+# Add style argument to the tm_fill() call
+tm_shape(countries_spdf) +
+  tm_fill(col = "population", style = "quantile") +
+  # Add a tm_borders() layer 
+  tm_borders(col = "burlywood4") 
+
+# New plot, with tm_bubbles() instead of tm_fill()
+tm_shape(countries_spdf) +
+  tm_bubbles(size = "population")  +
+  tm_borders(col = "burlywood4") 
+
+# Why is Greenland so big?
+#   
+#   Take a closer look at the plot. Why does Greenland look bigger than the contiguous US when 
+# it's actually only about one-third the size?
+# 
+# When you plot longitude and latitude locations on the x- and y-axes of a plot, you are treating 1
+# degree of longitude as the same size no matter where you are. However, because the earth is roughly 
+# spherical, the distance described by 1 degree of longitude depends on your latitude, varying from 111km at the equator,
+# to 0 km at the poles.
+# 
+# The way you have taken positions on a sphere and drawn them in a two dimensional plane is described by a projection. 
+# The default you've used here (also known as an Equirectangular projection) distorts the width of areas near the poles. 
+# Every projection involves some kind of distortion (since a sphere isn't a plane!), but different projections try 
+# to preserve different properties (e.g. areas, angles or distances).
+
+# To help you see the differences between projections, we've added a tm_grid() layer which adds equispaced 
+# longitude and latitude lines to the plot.
+# 
+# Within your tm_shape() call:
+# 
+# Try a Hobo-Dyer projection (projection = "hd"), designed to preserve area.
+# In a second plot, try a Robinson projection (projection = "robin"), designed as a compromise between
+# preserving local angles and area.
+# Just for fun, repeat the previous plot, but add tm_style_classic() to see how tmap can control all aspects of the maps display.
+                                                                                                                                                                                                                                                                                               
+# Switch to a Hobo-Dyer projection
+tm_shape(countries_spdf, projection = "hd") +
+  tm_grid(n.x = 11, n.y = 11) +
+  tm_fill(col = "population", style = "quantile")  +
+  tm_borders(col = "burlywood4") 
+
+# Switch to a Robinson projection
+tm_shape(countries_spdf, projection = "robin") +
+  tm_grid(n.x = 11, n.y = 11) +
+  tm_fill(col = "population", style = "quantile")  +
+  tm_borders(col = "burlywood4") 
+
+                                                                                                                                                                                                                                                                                        In tmap, tm_shape() takes an argument projection that allows you to swap projections for the plot.
+                                                                                                                                                                                                                                                                                               
+# Saving a tmap plot
+# 
+# Saving tmap plots is easy with the save_tmap() function. The first argument, tm, is the plot to save and the second,
+# filename, is the file to save it to. If you leave tm unspecified, the last tmap plot printed will be saved.
+# 
+# The extension of the file name specifies the file type, for example .png or .pdf for static plots. One really neat thing 
+# about tmap is that you can save an interactive version which leverages the leaflet package. To get an interactive version,
+# use save_tmap() but use the file name extension .html.        
+# (Note: changing the projection of a ggplot2 plot is done using the coord_map() function. See ?coord_map() for more details.)
+
+# Plot from last exercise
+tm_shape(countries_spdf) +
+  tm_grid(n.x = 11, n.y = 11, projection = "longlat") +
+  tm_fill(col = "population", style = "quantile")  +
+  tm_borders(col = "burlywood4")
+
+# Save a static version "population.png"
+save_tmap(filename = "population.png")
+
+# Save an interactive version "population.html"
+save_tmap(filename = "population.html")
+
+# What's a raster object?
+# 
+# Just like sp classes, the raster classes have methods to help with basic viewing and manipulation of objects, 
+# like print() and summary(), and you can always dig deeper into their structure with str().
+# 
+# Let's jump in and take a look at a raster we've loaded for you, pop. Keep an eye out for a few things:
+# 
+# Can you see where the coordinate information is kept?
+# Can you tell from the summary() how big the raster is?
+# What do you think might be stored in this raster?
+
+library(raster)
+
+# Print pop
+pop
+
+# Call str() on pop, with max.level = 2
+str(pop, max.level = 2)
+
+# Call summary on pop
+summary(pop)
+
+# Some useful methods
+# 
+# pop is a RasterLayer object, which contains the population around the Boston and NYC areas. Each grid cell 
+# simply contains a count of the number of people that live inside that cell.
+# 
+# You saw in the previous exercise that print() gives a useful summary of the object including the coordinate reference system, 
+# the size of the grid (both in number of rows and columns and geographical coordinates), and some basic info on the values stored 
+# in the grid. But it was very succinct; what if you want to see some of the values in the object?
+#   
+#   The first way is to simply plot() the object. There is a plot() method for raster objects that creates a heatmap of the values.
+# 
+# If you want to extract the values from a raster object you can use the values() function, which pulls out a vector of the values. 
+# There are 316,800 values in the pop raster, so you won't want to print them all out, but you can use str() and head() to take a peek.
+
+# Call plot() on pop
+plot(pop)
+
+# Call str() on values(pop)
+str(values(pop))
+
+# Call head() on values(pop)
+head(values(pop))
+
+# A more complicated object
+# 
+# The raster package provides the RasterLayer object, but also a couple of more complicated objects: RasterStack and RasterBrick. 
+# These two objects are designed for storing many rasters, all of the same extents and dimension (a.k.a. multi-band, or multi-layer
+#                                                                                                 rasters).
+# 
+# You can think of RasterLayer like a matrix, but RasterStack and RasterBrick objects are more like three dimensional arrays. 
+# One additional thing you need to know to handle them is how to specify a particular layer.
+# 
+# You can use $ or [[ subsetting on a RasterStack or RasterBrick to grab one layer and return a new RasterLayer object. 
+#                     For example, if x is a RasterStack, x$layer_name or x[["layer_name"]] will return a RasterLayer with only the 
+#                     layer called layer_name in it.
+#                     
+#                     Let's look at a RasterStack object called pop_by_age that covers the same area as pop but now contains 
+# layers for population broken into few different age groups.
+
+# Print pop_by_age
+pop_by_age
+
+# Subset out the under_1 layer using [[
+pop_by_age[["under_1"]]
+
+# Plot the under_1 layer
+plot(pop_by_age[["under_1"]])
+
+# A package that uses Raster objects
+
+# You saw the tmap package makes visualizing spatial classes in sp easy. The good news is that it works with the 
+# raster classes too! You simply pass your Raster___ object as the shp argument to the tm_shape() function, and then 
+# add a tm_raster() layer like this:
+#   
+#   tm_shape(raster_object) +
+#   tm_raster()
+# When working with a RasterStack or a RasterBrick object, such as the pop_by_age object you created in the last exercise, 
+# you can display one of its layers using the col (short for "color") argument in tm_raster(), surrounding the layer name in quotes.
+# 
+# You'll work with tmap throughout the course, but we also want to show you another package, rasterVis, 
+# also designed specifically for visualizing raster objects. There are a few different functions you can use in rasterVis
+# to make plots, but let's just try one of them for now: levelplot().
+
+library(tmap)
+# Specify pop as the shp and add a tm_raster() layer
+tm_shape(pop) +
+  tm_raster()
+
+# Plot the under_1 layer in pop_by_age
+tm_shape(pop_by_age) +
+  tm_raster(col = "under_1")
+
+library(rasterVis)
+# Call levelplot() on pop
+levelplot(pop)
+
+# Adding a custom continuous color palette to ggplot2 plots
+# 
+# The most versatile way to add a custom continuous scale to ggplot2 plots is with scale_color_gradientn() or scale_fill_gradientn(). 
+# How do you know which to use? Match the function to the aesthetic you have mapped. For example, in your plot of predicted house price from Chapter 1, you mapped fill to price, so you'd need to use scale_fill_gradientn().
+# 
+# These two functions take an argument colors where you pass a vector of colors that defines your palette. This is where the 
+# versatility comes in. You can generate your palette in any way you choose, automatically using something like RColorBrewer 
+# or viridisLite, or manually by specifying colors by name or hex code.
+# 
+# The scale___gradientn() functions handle how these colors are mapped to values of your variable, although there is control 
+# available through the values argument.
+# 
+# Let's play with some alternative color scales for your predicted house price heatmap from Chapter 1 (we've dropped the map
+# background to reduce computation time, so you can see your plots quickly).
+
+library(RColorBrewer)
+# 9 steps on the RColorBrewer "BuPu" palette: blups
+blups <- brewer.pal(9, "BuPu")
+
+# Add scale_fill_gradientn() with the blups palette
+ggplot(preds) +
+  geom_tile(aes(lon, lat, fill = predicted_price), alpha = 0.8) +
+  scale_fill_gradientn(colors = blups)
+
+library(viridisLite)
+# viridisLite viridis palette with 9 steps: vir
+vir <- viridis(9)
+
+# Add scale_fill_gradientn() with the vir palette
+ggplot(preds) +
+  geom_tile(aes(lon, lat, fill = predicted_price), alpha = 0.8) +
+  scale_fill_gradientn(colors = vir)
+
+# mag: a viridisLite magma palette with 9 steps
+mag <- magma(9)
+
+# Add scale_fill_gradientn() with the mag palette
+ggplot(preds) +
+  geom_tile(aes(lon, lat, fill = predicted_price), alpha = 0.8) +
+  scale_fill_gradientn(colors = mag) 
+
+# Custom palette in tmap
+# 
+# Unlike ggplot2, where setting a custom color scale happens in a scale_ call, colors in tmap layers are specified 
+# in the layer in which they are mapped. For example, take a plot of the age_18_24 variable from prop_by_age:
+#   
+#   tm_shape(prop_by_age) +
+#   tm_raster(col = "age_18_24") 
+# Since color is mapped in the tm_raster() call, the specification of the palette also occurs in this call. You simply 
+# specify a vector of colors in the palette argument. This is a another reason it's worth learning ways to generate a vector of colors. While different packages could have very different shortcuts for specifying palettes from color packages, they will generally always have a way to pass in a vector of colors.
+# 
+# Let's use some palettes from the last exercise with this plot.
+# Generate palettes from last time
+
+library(RColorBrewer)
+blups <- brewer.pal(9, "BuPu")
+
+library(viridisLite)
+vir <- viridis(9)
+mag <- magma(9)
+
+# Use the blups palette
+tm_shape(prop_by_age) +
+  tm_raster("age_18_24", palette = blups) +
+  tm_legend(position = c("right", "bottom"))
+
+# Use the vir palette
+tm_shape(prop_by_age) +
+  tm_raster("age_18_24", palette = vir) +
+  tm_legend(position = c("right", "bottom"))
+
+# Use the mag palette but reverse the order
+tm_shape(prop_by_age) +
+  tm_raster("age_18_24", palette = rev(mag)) +
+  tm_legend(position = c("right", "bottom"))
+
+
+# An interval scale example - BINNING THE CATEGORIES _ VERY IMPORTANT
+# 
+# Let's return to your plot of the proportion of the population that is between 18 and 24:
+# 
+# tm_shape(prop_by_age) +
+# tm_raster("age_18_24", palette = vir) +
+# tm_legend(position = c("right", "bottom"))
+
+# Your plot was problematic because most of the proportions fell in the lowest color level and consequently you didn't 
+# see much detail in your plot. One way to solve this problem is this: instead of breaking the range of your variable into 
+# equal length bins, you can break it into more useful categories.
+# 
+# Let's start by replicating the tmap default bins: five categories, cut using "pretty" breaks. Then you can try out a few 
+# of the other methods to cut a variable into intervals. Using the classIntervals() function directly gives you quick feedback 
+# on what the breaks will be, but the best way to try out a set of breaks is to plot them.
+# 
+# (As an aside, another way to solve this kind of problem is to look for a transform of the variable so that equal length bins
+# of the transformed scale are more useful.)
+
+# Call classIntervals() on values(prop_by_age[["age_18_24"]]) with n = 5 and style = "pretty". See the problem? 130,770 of your
+# grid cells end up in the first bin.
+
+# Now call classIntervals() as above, but with style = "quantile".
+# 
+# Use the equisized bins by passing the n and style arguments into the tm_raster() layer of your plot.
+# 
+# Make a histogram of values(prop_by_age[["age_18_24"]]). Where would you make the breaks?
+#   Create your own breaks in tm_raster() by specifying breaks = c(0.025, 0.05, 0.1, 0.2, 0.25, 0.3, 1).
+
+# Save your final plot as a leaflet plot using save_tmap() and the filename "prop_18-24.html".
+
+mag <- viridisLite::magma(7)
+
+library(classInt)
+
+# Create 5 "pretty" breaks with classIntervals()
+classIntervals(values(prop_by_age[["age_18_24"]]), 
+               n = 5, style = "pretty")
+
+# Create 5 "quantile" breaks with classIntervals()
+classIntervals(values(prop_by_age[["age_18_24"]]), 
+               n = 5, style = "quantile")
+
+# Use 5 "quantile" breaks in tm_raster()
+tm_shape(prop_by_age) +
+  tm_raster("age_18_24", palette = mag, style = "quantile") +
+  tm_legend(position = c("right", "bottom"))
+
+# Create histogram of proportions
+hist(values(prop_by_age)[, "age_18_24"])
+
+# Use fixed breaks in tm_raster()
+tm_shape(prop_by_age) +
+  tm_raster("age_18_24", palette = mag,
+            style = "fixed", breaks = c(0.025, 0.05, 0.1, 0.2, 0.25, 0.3, 1))
+
+# Save your plot to "prop_18-24.html"
+tmap_save(filename = "O:/prop_18-24.png")
+
+
+# A diverging scale example
+# 
+# Let's take a look at another dataset where the default color scale isn't appropriate. This raster, migration, has an estimate
+# of the net number of people who have moved into each cell of the raster between the years of 1990 and 2000. A positive number 
+# indicates a net immigration, and a negative number an emigration. Take a look:
+#   
+#   tm_shape(migration) +
+#   tm_raster() +
+#   tm_legend(outside = TRUE, 
+#             outside.position = c("bottom"))
+# 
+# The default color scale doesn't look very helpful, but tmap is actually doing something quite clever: it has automatically 
+# chosen a diverging color scale. A diverging scale is appropriate since large movements of people are large positive numbers 
+# or large (in magnitude) negative numbers. Zero (i.e. no net migration) is a natural midpoint.
+# 
+# tmap chooses a diverging scale when there are both positive and negative values in the mapped variable and chooses zero as the 
+# midpoint. This isn't always the right approach. Imagine you are mapping a relative change as percentages; 100% might be the 
+# most intuitive midpoint. If you need something different, the best way to proceed is to generate a diverging palette (with an
+#                               odd number of steps, so there is a middle color) and specify the breaks yourself.
+# 
+# Let's see if you can get a more informative map by adding a diverging scale yourself.
+# 
+# (Data source: de Sherbinin, A., M. Levy, S. Adamo, K. MacManus, G. Yetman, V. Mara, L. Razafindrazay, B. Goodrich, T. Srebotnjak, C.
+# Aichele, and L. Pistolesi. 2015. Global Estimated Net Migration Grids by Decade: 1970-2000. Palisades, NY: NASA Socioeconomic Data
+# and Applications Center (SEDAC). http://dx.doi.org/10.7927/H4319SVC Accessed 27 Sep 2016)
+
+# Print migration to verify this is a RasterLayer object and take a look at the range in migration values.
+# 
+# Generate a diverging palette, called red_gray, of 7 colors from the "RdGy" palette in RColorBrewer.
+# 
+# Use the diverging set of colors, red_gray, as the palette for your plot. This uses your colors, but the breaks aren't useful.
+# 
+# Add fixed breaks for the color scale of: c(-5e6, -5e3, -5e2, -5e1, 5e1, 5e2, 5e3, 5e6)
+
+# Print migration
+migration
+
+# Diverging "RdGy" palette
+red_gray <- brewer.pal(7, "RdGy")
+
+# Use red_gray as the palette 
+tm_shape(migration) +
+  tm_raster(palette = red_gray) +
+  tm_legend(outside = TRUE, outside.position = c("bottom"))
+
+# Add fixed breaks 
+tm_shape(migration) +
+  tm_raster(palette = red_gray, style = "fixed", 
+            breaks = c(-5e6, -5e3, -5e2, -5e1, 5e1, 5e2, 5e3, 5e6)) +
+  tm_legend(outside = TRUE, outside.position = c("bottom"))
+
+
+# A qualitative example
+# 
+# Finally, let's look at an example of a categorical variable. The land_cover raster contains a gridded categorization of 
+# the earth's surface. Have a look at land_cover by printing it:
+#   
+#   land_cover
+# You will notice that the values are numeric, but there are attributes that map these numbers to categories (just like the way
+#                                                                                                             factors work).
+# 
+# Choosing colors for categorical variables depends a lot on the purpose of the graphic. When you want the categories to 
+# have roughly equal visual weight -- that is, you don't want one category to stand out more than the others -- one approach 
+# is to use colors of varying hues, but equal chroma (a measure of vibrancy) and lightness (this is default for discrete color 
+# scales in ggplot2 and can be generated using the hcl() function).
+# 
+# The RColorBrewer qualitative palettes balance having equal visual weight colors with ease of color identification. The "paired" 
+# and "accent" schemes deviate from this by providing pairs of colors of different lightness and a palette with some more intense 
+# colors that may be used to highlight certain categories, respectively.
+# 
+# For this particular data, it might make more sense to choose intuitive colors, like green for forest and blue for water. 
+# Whichever is more appropriate, setting new colors is just a matter of passing in a vector of colors through the palette 
+# argument in the corresponding tm_*** layer.
+
+# Plot the land_cover raster by combining tm_shape() and tm_raster(). By default tmap uses the RColorBrewer "Set3" qualitative palette.
+# 
+# Examine the code for hcl_cols, which mimics the palette used by ggplot2. Then plot the land_cover raster again, passing hcl_cols 
+# to the palette argument to tm_raster().
+# 
+# Call levels() on land_cover to see the categories.
+# 
+# This time, use intuitive_cols as the palette and add a tm_legend() layer with the argument position = c("left", "bottom").
+
+library(raster)
+
+land_cover
+
+# Plot land_cover
+tm_shape(land_cover) +
+  tm_raster() 
+
+# Palette like the ggplot2 default
+hcl_cols <- hcl(h = seq(15, 375, length = 9), 
+                c = 100, l = 65)[-9]
+
+# Use hcl_cols as the palette
+tm_shape(land_cover) +
+  tm_raster(palette = hcl_cols) 
+
+# Examine levels of land_cover
+levels(land_cover)
+
+# A set of intuitive colors
+intuitive_cols <- c(
+  "darkgreen",
+  "darkolivegreen4",
+  "goldenrod2",
+  "seagreen",
+  "wheat",
+  "slategrey",
+  "white",
+  "lightskyblue1"
+)
+
+# Use intuitive_cols as palette
+tm_shape(land_cover) +
+  tm_raster(palette = intuitive_cols) +
+  tm_legend(position = c("left", "bottom"))
+
+
+# Reading in a shapefile
+# 
+# Shapefiles are one of the most common ways spatial data are shared and are easily read into R using readOGR() 
+# from the rgdal package. readOGR() has two important arguments: dsn and layer. Exactly what you pass to these arguments 
+# depends on what kind of data you are reading in. You learned in the video that for shapefiles, dsn should be the path to the 
+# directory that holds the files that make up the shapefile and layer is the file name of the particular shapefile (without any
+#                                                                                                                   extension).
+# 
+# For your map, you want neighborhood boundaries. We downloaded the Neighborhood Tabulation Areas, as defined by the City of
+# New York, from the Open Data Platform of the Department of City Planning. The download was in the form of a zip archive and
+# we have put the result of unzipping the downloaded file in your working directory.
+# 
+# You'll use the dir() function from base R to examine the contents of your working directory, then read in the shapefile to R.
+
+# Use dir() with no arguments to find out the name of the directory of the shapefile.
+# 
+# Use dir(), passing in the path to the shapefile directory, to see the files inside.
+# 
+# Now you know the directory and file name. Use readOGR() to read the neighborhood shapefile into an object called neighborhoods.
+# 
+# Check the contents by calling summary() on neighborhoods.
+# 
+# Check the contents by plotting neighborhoods.
+
+library(sp)
+library(rgdal)
+
+# Use dir() to find directory name
+dir()
+
+# Call dir() with directory name
+dir("nynta_16c")
+
+# Read in shapefile with readOGR(): neighborhoods
+neighborhoods <- readOGR("nynta_16c", "nynta")
+
+# summary() of neighborhoods
+summary(neighborhoods)
+
+# Plot neighborhoods
+plot(neighborhoods)
+
+# Reading in a raster file
+# 
+# Raster files are most easily read in to R with the raster() function from the raster package. You simply pass in the filename 
+# (including the extension) of the raster as the first argument, x.
+# 
+# The raster() function uses some native raster package functions for reading in certain file types (based on the extension in the
+#                                                                                                    file name) and otherwise hands 
+# the reading of the file on to readGDAL() from the rgdal package. The benefit of not using readGDAL() directly is simply that raster
+# () returns a RasterLayer object.
+# 
+# A common kind of raster file is the GeoTIFF, with file extension .tif or .tiff. We've downloaded a median income raster from 
+# the US census and put it in your working directory.
+# 
+# Let's take a look and read it in.
+
+library(raster) 
+
+# Call dir()
+dir()
+
+# Call dir() on the directory
+dir("nyc_grid_data")
+
+# Use raster() with file path: income_grid
+income_grid <- raster("nyc_grid_data/m5602ahhi00.tif")
+
+# Call summary() on income_grid
+summary(income_grid)
+
+# Call plot() on income_grid
+plot(income_grid)
+
+# Getting data using a package
+# 
+# Reading in spatial data from a file is one way to get spatial data into R, but there are also some packages that provide 
+# commonly used spatial data. For example, the rnaturalearth package provides data from Natural Earth, a source of high resolution 
+# world maps including coastlines, states, and populated places. In fact, this was the source of the data from Chapter 2.
+# 
+# You will be examining median income at the census tract level in New York County (a.k.a. the Bourough of Manhattan), but to do 
+# this you'll need to know the boundaries of the census tracts. The tigris package in R provides a way to easily download and 
+# import shapefiles based on US Census geographies. You'll use the tracts() function to download tract boundaries, but tigris 
+# also provides states(), counties(), places() and many other functions that match the various levels of geographic entities
+# defined by the Census.
+# 
+# Let's grab the spatial data for the tracts.
+
+library(sp)
+library(tigris)
+
+# Call tracts(): nyc_tracts
+nyc_tracts <- tracts(state = "NY", county = "New York", cb = TRUE)
+
+# Call summary() on nyc_tracts
+summary(nyc_tracts)
+
+# Plot nyc_tracts
+plot(nyc_tracts)
+
+# Merging data from different CRS/projections
+# 
+# Every spatial object has a coordinate reference system (CRS) associated with it. Generally, this is set when the data are
+# imported and will be read directly from the spatial files. This is how the neighborhoods and nyc_tracts obtained their coordinate
+# system information.
+# 
+# Both the sp and raster packages have a proj4string() function that returns the CRS of the object it's called on.
+# 
+# Trying to work with spatial data using different CRSs is a bit like trying to work with a dataset in miles and another in kilometers. They are measuring the same thing, but the numbers aren't directly comparable.
+# 
+# Let's take a look at our two polygon objects.
+
+# Call proj4string() on neighborhoods, then again on nyc_tracts. Verify the two strings are different.
+# 
+# Take a look at the head() of the coordinates() of neighborhoods and repeat for nyc_tracts. Can you see the problem? nyc_tracts 
+# has x coordinates around -70, but neighborhoods is around 1,000,000!
+#   
+#   Plot neighborhoods, then plot nyc_tracts with col = "red" and add = TRUE to add them on top.
+
+# proj4string() on nyc_tracts and neighborhoods
+proj4string(nyc_tracts)
+proj4string(neighborhoods)
+
+# coordinates() on nyc_tracts and neighborhoods
+head(coordinates(nyc_tracts))
+head(coordinates(neighborhoods))
+
+# plot() neighborhoods and nyc_tracts
+plot(neighborhoods)
+plot(nyc_tracts, add = TRUE, col = "red")
+
+
+# Converting from one CRS/projection to another
+# 
+# The process of converting from one CRS or projection to another is handled by the spTransform() methods in the rgdal package. 
+# spTransform() has methods for all sp objects including SpatialPolygonsDataFrame, but doesn't work on raster objects. 
+# This is because transforming a raster is a little more complicated; the transformed rectangular grid will no longer be rectangular.
+# You can look at ?raster::projectRaster if you are curious about transforming rasters.
+# 
+# Transformation is simple. The first argument to spTransform(), x, is the spatial object to be transformed and the second, CRS, 
+# is a specification of the desired CRS. The CRS can be specified by a PROJ4 string, which you could construct by hand, 
+# but it's much easier to take it from an existing object (e.g. with the proj4string() function).
+# 
+# Time to get your two polygons datasets into the same CRS.
+
+# Transform neighborhoods to have the same CRS as nyc_tracts by using spTransform() with the CRS argument set to 
+# proj4string(nyc_tracts).
+# 
+# Verify the transformation by looking at the head() of coordinates(neighborhoods).
+# 
+# Check the datasets now line up by plotting neighborhoods, then plotting nyc_tracts with add = TRUE and col = "red", and 
+# finally plotting water with add = TRUE and col = "blue".
+
+
+
+# Use spTransform on neighborhoods: neighborhoods
+neighborhoods <- spTransform(neighborhoods,   
+                             proj4string(nyc_tracts))
+
+# head() on coordinates() of neighborhoods
+head(coordinates(neighborhoods))
+
+# Plot neighborhoods, nyc_tracts and water
+plot(neighborhoods)
+plot(nyc_tracts, add = TRUE, col = "red")
+plot(water, add = TRUE, col = "blue")
+
+# The wrong way
+# 
+# When a Spatial***DataFrame object is created, there are two ways the spatial objects (e.g. Polygons) 
+# might be matched up to the rows of the data. The most robust is to use IDs on the spatial objects that are matched up to 
+# row names in the data. This ensures if there are any that don't match you are quickly alerted. The other way is simply by
+# order -- the first spatial object is assumed to correspond to the first row of data.
+# 
+# Once created, the correspondence is based purely on order. If you manipulate the data slot, there is no checking the 
+# spatial objects still correspond to the right rows. What does this mean in practice? It's very dangerous to manipulate 
+# the data slot directly!
+#   
+#   To create your plot of income, you need to match up the income data frame with the tracts SpatialPolygonsDataFrame. 
+# To illustrate the danger of manipulating @data directly, let's see what happens if you try to force nyc_income in to nyc_tracts.
+# 
+# Use str() to look at nyc_income.
+# 
+# Do the same for the data slot of nyc_tracts.
+# 
+# They both have the same number of rows, with information about the same tracts (tract in nyc_income and TRACTCE in nyc_tracts), but in different orders.
+
+
+# Use str() on nyc_income
+str(nyc_income)
+
+# ...and on nyc_tracts@data
+str(nyc_tracts@data)
+
+# Highlight tract 002201 in nyc_tracts
+plot(nyc_tracts)
+plot(nyc_tracts[nyc_tracts$TRACTCE == "002201", ], 
+     col = "red", add = TRUE)
+
+# Set nyc_tracts@data to nyc_income
+nyc_tracts@data <- nyc_income
+
+# Highlight tract 002201 again
+plot(nyc_tracts)
+plot(nyc_tracts[nyc_tracts$tract == "002201", ], 
+     col = "red", add = TRUE)
+# 
+# Checking data will match
+# 
+# Forcing your data into the data slot doesn't work because you lose the correct correspondence between rows and spatial objects.
+# How do you add the income data to the polygon data? The merge() function in sp is designed exactly for this purpose.
+# 
+# You might have seen merge() before with data frames. sp::merge() has almost the exact same structure, but you pass it a
+# Spatial*** object and a data frame and it returns a new Spatial*** object where the data slot is now a merge of the original
+# data slot and the data frame. To do this merge, you'll require both the spatial object and data frame to have a column that 
+# contains IDs to match on.
+# 
+# Both nyc_tracts and nyc_income have columns with tract IDs, so these are great candidates for merging the two datasets. 
+# However, it's always a good idea to check that the proposed IDs are unique and that there is a match for every row in both datasets.
+# 
+# Let's check this before moving on to the merge.
+
+Use any() with duplicated() on nyc_income$tract to check if every row in nyc_income has a unique tract ID.
+
+Use any() with duplicated() on nyc_tracts$TRACTCE to check if every row in nyc_tracts has a unique tract ID.
+
+Use all() on nyc_tracts$TRACTCE %in% nyc_income$tract to check the nyc_tracts tracts are all in nyc_income.
+
+Use all() on nyc_income$tract %in% nyc_tracts$TRACTCE to check the nyc_income tracts are all in nyc_tracts.
+
+# Check for duplicates in nyc_income
+any(duplicated(nyc_income$tract))
+
+# Check for duplicates in nyc_tracts
+any(duplicated(nyc_tracts$TRACTCE))
+
+# Check nyc_tracts in nyc_income
+all((nyc_tracts$TRACTCE %in% nyc_income$tract))
+
+# Check nyc_income in nyc_tracts
+all((nyc_income$tract %in% nyc_tracts$TRACTCE))
+
+str(nyc_income)
+nyc_tracts
+
+# Merging data attributes
+# 
+# merge() by default merges based on columns with the same name in both datasets. In your case, this isn't appropriate
+# since the column of IDs is called tract in one dataset and TRACTCE in the other. To handle this, merge() has the 
+# optional arguments by.x and by.y, where you can specify the names of the column to merge on in the two datasets, respectively.
+# 
+# merge() returns a new Spatial___DataFrame object, so you can take a look at the result by plotting it with tmap.
+# 
+# Let's go ahead and merge.
+
+# Use merge(), passing the spatial object nyc_tracts first and the data frame nyc_income second. Specify by.x = "TRACTCE" 
+# and by.y = "tract". Store the result in nyc_tracts_merge.
+# 
+# Use summary() on nyc_tracts_merge to verify the object is a SpatialPolygonsDataFrame and the data also contain the needed 
+# estimate column from nyc_income.
+# 
+# Use tm_shape() and add a tm_fill() layer to create a choropleth map of nyc_tracts_merge, mapping color to estimate.
+
+
+library(sp)
+library(tmap)
+nyc_tract
+
+
+# Merge nyc_tracts and nyc_income: nyc_tracts_merge
+nyc_tracts_merge <- merge(nyc_tracts, nyc_income, by.x = "tract", by.y = "tract")
+
+# Call summary() on nyc_tracts_merge
+summary(nyc_tracts_merge)
+nyc_tracts_merge
+
+# A first plot
+# 
+# So far, you've read in some spatial files, transformed spatial data to the same projection, and merged a data frame 
+# with a spatial object. Time to put your work together and see how your map looks. For each dataset, you need a tm_shape() call 
+# to specify the data source, followed by a tm_* layer (like tm_fill(), tm_borders() or tm_bubbles()) to draw on the map.
+# 
+# First, you'll add the neighborhoods and water areas to your plot from the previous exercise.
+
+# Add a layer for the water object with tm_shape(). Then use tm_fill() and set the color to "grey90".
+# 
+# Similarly, add a layer for the neighborhoods object. Use tm_borders() to draw the neighborhood outlines.
+
+library(tmap)
+
+nyc_tracts_merge$estimate.x
+
+tm_shape(nyc_tracts_merge) +
+  tm_fill(col = "estimate.x") +
+  # Add a water layer, tm_fill() with col = "grey90"
+  tm_shape(water) +
+  tm_fill(col = "grey90") +
+  # Add a neighborhood layer, tm_borders()
+  tm_shape(neighborhoods) +
+  tm_borders() 
+
+# Subsetting the neighborhoods
+# 
+# You don't need all those extraneous neighborhoods in New York, so you'll subset 
+# out just the neighborhoods in New York County. You already know how!
+#   
+#   neighborhoods is a SpatialPolygonsDataFrame and you learned back in Chapter 2 
+# how to subset based on the column in the data slot. The key was creating a logical vector,
+# then subsetting the SpatialPolygonsDataFrame like a data frame.
+# 
+# How can you identify the right neighborhoods? Check out:
+#   
+#   head(neighborhoods@data)
+
+# The CountyFIPS is a numeric code that identifies the county. If you can figure 
+# out the code for New York County, you can keep just the rows with that value.
+
+# The nyc_tracts_merge object also has country codes in the column COUNTYFP. 
+# Find the unique() values to find the code for New York County.
+# 
+# Subset neighborhoods by adding a logical that tests if neighborhoods$CountyFIPS 
+# has the right value.
+# 
+# Edit your plot to use manhat_hoods instead of neighborhoods.
+# 
+# Add a tm_text() layer, mapping text to "NTAName".
+
+library(tmap)
+
+# Find unique() nyc_tracts_merge$COUNTYFP
+unique(nyc_tracts_merge$COUNTYFP)
+
+# Add logical expression to pull out New York County
+manhat_hoods <- neighborhoods[neighborhoods$CountyFIPS == "061", ]
+
+tm_shape(nyc_tracts_merge) +
+  tm_fill(col = "estimate.x") +
+  tm_shape(water) +
+  tm_fill(col = "grey90") +
+  # Edit to use manhat_hoods instead
+  tm_shape(manhat_hoods) +
+  tm_borders() +
+  # Add a tm_text() layer
+  tm_text(text = "NTAName")
+
+# Adding neighborhood labels
+# 
+# The neighborhood labels are so long and big they are obscuring our data.
+# Take a look at manhat_hoods$NTAName. You'll see some neighborhoods are 
+# really the combination of a couple of places. One option to make the names 
+# a little more concise is to split them into a few lines. For example, turning
+# 
+# Midtown-Midtown South
+# into
+# 
+# Midtown /
+# Midtown 
+# South
+# To do this, you can make use of the gsub() function in base R. gsub() 
+# replaces the first argument by the second argument in the strings provided 
+# in the third argument. For example, gsub("a", "A", x) replaces all the 
+# "a"s in x with "A".
+# 
+# You also might play with the size of the text to shrink the impact of the 
+# neighborhood names.
+
+# 
+# Create a new column name in manhat_hoods by using gsub() to replace all 
+# the spaces (" ") with newlines ("\n") in manhat_hoods$NTAName.
+# 
+# Update name in manhat_hoods by using gsub() to replace all the dashes ("-") 
+# with a forward slash then newline ("/\n") in manhat_hoods$name.
+# 
+# Edit your plot to map text to "name" and set the size to 0.5.
+
+
+# gsub() to replace " " with "\n"
+manhat_hoods$name <- gsub(" ", "\n", manhat_hoods$NTAName)
+
+# gsub() to replace "-" with "/\n"
+manhat_hoods$name <- gsub("-", "/\n", manhat_hoods$name)
+
+# Edit to map text to name, set size to 0.5
+tm_shape(nyc_tracts_merge) +
+  tm_fill(col = "estimate.x") +
+  tm_shape(water) +
+  tm_fill(col = "grey90") +
+  tm_shape(manhat_hoods) +
+  tm_borders() +
+  tm_text(text = "name", size = 0.5)
+
+# Tidying up the legend and some final tweaks
+# 
+# Time for some final tweaks and then to save your plot.
+# 
+# Every element in your plot is a target for tweaks. Is it the right color? 
+#   Is it the right size? Does it have intuitive labels? Your goal 
+# is to emphasize the data and de-emphasise the non-data elements.
+# 
+# We've got some ideas for this plot. Let's tweak a few things.
+# 
+# 
+# Make it clear what the color represents by adding title = "Median Income" and 
+# palette = "Greens" in the tm_fill() call, which will map income to a green color scale.
+# 
+# Add subtle borders to the tracts to make it more clear where their boundaries 
+# are by adding a tm_borders() layer with col = "grey60" and lwd = 0.5.
+# 
+# Make the neighborhood boundaries a little more important than tract boundaries by 
+# setting col = "grey40" and lwd = 2.
+# 
+# Add a data source credit using a tm_credits() call with first argument "Source: ACS 2014 5-year Estimates, \n accessed via acs package" and second argument position = c("right", "bottom").
+# 
+# Finally, save your plot as "nyc_income_map.png" using the save_tmap() function with 
+# arguments width = 4 and height = 7.
+
+tm_shape(nyc_tracts_merge) +
+  # Add title and change palette
+  tm_fill(col = "estimate.x", 
+          title = "Median Income",
+          palette = "Greens") +
+  # Add tm_borders()
+  tm_borders(col = "grey60", lwd = 0.5) +
+  tm_shape(water) +
+  tm_fill(col = "grey90") +
+  tm_shape(manhat_hoods) +
+  # Change col and lwd of neighborhood boundaries
+  tm_borders(col = "grey40", lwd = 2) +
+  tm_text(text = "name", size = 0.5) +
+  # Add tm_credits()
+  tm_credits("Source: ACS 2014 5-year Estimates, \n accessed via acs package", 
+             position = c("right", "bottom"))
+
+# Save map as "nyc_income_map.png"
+save_tmap(filename = "O:/nyc_income_map.png", width = 4, height = 7)
