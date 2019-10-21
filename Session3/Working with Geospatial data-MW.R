@@ -1,6 +1,4 @@
-#FROM GITHUB
-# install.packages("devtools")
-devtools::install_github("cwickham/geospatial")
+
 
 if(!require(geospatial)){install.packages("geospatial")}
 if(!require(ggplot2)){install.packages("ggplot2")}
@@ -66,39 +64,83 @@ ggplot(fuels, aes(x = LONG, y = LAT)) +
 
 
 
-map = openmap(upperLeft = c(lon = 80, lat = 60),
-              lowerRight = c(lon = 90, lat = 50), zoom = 12)
-
-
-
-map <- openmap(c(-43.39838,171.5555),
-               c(-43.41561,171.5748),
-               zoom = 15, type="bing")
-
-# View map using autoplot (part of ggplot):
-autoplot(map)
-
-
-# Can add our sampling points to the map:
-autoplot(map) + geom_point(data=fuels, aes(x=LONG, y=LAT))
-
-
-# Reproject to lat long:
-map_latlon <- openproj(map, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
-
-autoplot(map_latlon) + geom_point(aes(x = LONG, y = LAT, col = TRANSECT), data = fuels, alpha = .5)
-
-
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-# ggmap method:
+# Before downloading the map, let's figure out the extent of our region of interest:
 height <- max(fuels$LAT) - min(fuels$LAT)
 width <- max(fuels$LONG) - min(fuels$LONG)
-sac_borders <- c(bottom  = min(fuels$LAT)  - 0.1 * height, 
-                 top     = max(fuels$LAT)  + 0.1 * height,
-                 left    = min(fuels$LONG) - 0.1 * width,
-                 right   = max(fuels$LONG) + 0.1 * width)
 
-stamen_map <- get_stamenmap(sac_borders, zoom = 13, scale = 1, maptype = "toner-lite")
+rakaia_lims <- c(bottom  = min(fuels$LAT)  - 0.1 * height,
+                 top = max(fuels$LAT)  + 0.1 * height,
+                 left = min(fuels$LONG) - 0.1 * width,
+                 right = max(fuels$LONG) + 0.1 * width)
+
+
+# rakaia_lims is a named vecotor, and each element can be accessed via square brackets:
+rakaia_lims["bottom"]
+rakaia_lims["left"]
+
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#######         OPENSTREETMAP PACKAGE - SATELLITE IMAGERY          #############
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+
+# openmap requires upper-left and lower-right coordinates
+osm_map <- openmap(c(rakaia_lims["top"], rakaia_lims["left"]),
+               c(rakaia_lims["bottom"], rakaia_lims["right"]),
+               zoom = 15, type="bing")
+
+
+# View map using autoplot (part of ggplot):
+autoplot(osm_map)
+
+
+# Autoplot(map) is a self-sufficient ggplot object, and we can add geoms to it as usual.
+#   Let's add our sampling points to the map:
+autoplot(osm_map) + geom_point(data=fuels, aes(x=LONG, y=LAT))
+
+
+# This didn't work... Whats' wrong? Let's take a look at our map again:
+autoplot(osm_map)
+
+# Now, examine LAT and LONG columns we are trying to plot:
+fuels[1:5, c("LAT", "LONG")]
+
+# Looks like the downloaded map is in NZTM grid coordinates and our data is in lat/long.
+#   We can reproject our map to lat and long:
+osm_map_latlon <- openproj(osm_map, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+
+
+autoplot(osm_map_latlon) +
+  geom_point(aes(x = LONG, y = LAT), data = fuels, alpha = .5)
+
+
+# We can get creative with ggplot:
+
+autoplot(osm_map_latlon) +
+  geom_point(aes(x = LONG, y = LAT, color = GORSE.HT, size = GORSE.PERC), data = fuels, alpha = .5) +
+  scale_color_gradientn(colors = topo.colors(10))
+
+
+# This is good for simple stuff, but with autoplot we don't have a way to pass a data and aes()
+#   arguments for all geoms at once, and we would have to repeat them for every geom.
+#   Also, with this method we cannot use facet_wrap
+
+
+# ggmap package gives us this functionality, but it can't access nice satellite imagery without
+#   signing up with google
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#######         GGMAP PACKAGE - SATELLITE IMAGERY          #############
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+
+# Let's first compare maps at a more zoomed-out scale
+
+
+
+stamen_map <- get_stamenmap(rakaia_lims, zoom = 13, scale = 1, maptype = "toner-lite")
 
 ggmap(stamen_map)
 
