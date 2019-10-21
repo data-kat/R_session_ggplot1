@@ -4,12 +4,14 @@ if(!require(geospatial)){install.packages("geospatial")}
 if(!require(ggplot2)){install.packages("ggplot2")}
 if(!require(ggmap)){install.packages("ggmap")}
 if(!require(OpenStreetMap)){install.packages("OpenStreetMap")}
+if(!require(sp)){install.packages("sp")}
+
 
 library(geospatial)
 library(ggplot2)
 library(ggmap)
 library(OpenStreetMap)
-
+library(sp)
 
 
 # If you are not working in a version control R Studio Project,
@@ -53,11 +55,11 @@ graphics.off()
 
 # Read the data in
 # Note: I placed metadata into the first row, so we will be skipping one row from the top:
-fuels = read.csv("Rakaia_fuels.csv", skip = 1)
+sales = read.csv("sales.csv")
 
 
 # Can simply plot points with ggplot:
-ggplot(fuels, aes(x = LONG, y = LAT)) + 
+ggplot(sales, aes(x = lon, y = lat)) + 
   geom_point()
 
 # Lacking spatial context... Need a background map for that
@@ -65,18 +67,18 @@ ggplot(fuels, aes(x = LONG, y = LAT)) +
 
 
 # Before downloading the map, let's figure out the extent of our region of interest:
-height <- max(fuels$LAT) - min(fuels$LAT)
-width <- max(fuels$LONG) - min(fuels$LONG)
+height <- max(sales$lat) - min(sales$lat)
+width <- max(sales$lon) - min(sales$lon)
 
-rakaia_lims <- c(bottom  = min(fuels$LAT)  - 0.1 * height,
-                 top = max(fuels$LAT)  + 0.1 * height,
-                 left = min(fuels$LONG) - 0.1 * width,
-                 right = max(fuels$LONG) + 0.1 * width)
+bounding_box <- c(bottom  = min(sales$lat)  - 0.1 * height,
+                 top = max(sales$lat)  + 0.1 * height,
+                 left = min(sales$lon) - 0.1 * width,
+                 right = max(sales$lon) + 0.1 * width)
 
 
-# rakaia_lims is a named vecotor, and each element can be accessed via square brackets:
-rakaia_lims["bottom"]
-rakaia_lims["left"]
+# bounding_box is a named vecotor, and each element can be accessed via square brackets:
+bounding_box["bottom"]
+bounding_box["left"]
 
 
 
@@ -86,9 +88,9 @@ rakaia_lims["left"]
 
 
 # openmap requires upper-left and lower-right coordinates
-osm_map <- openmap(c(rakaia_lims["top"], rakaia_lims["left"]),
-               c(rakaia_lims["bottom"], rakaia_lims["right"]),
-               zoom = 15, type="bing")
+osm_map <- openmap(c(bounding_box["top"], bounding_box["left"]),
+               c(bounding_box["bottom"], bounding_box["right"]),
+               zoom = 12, type="bing")
 
 
 # View map using autoplot (part of ggplot):
@@ -97,14 +99,14 @@ autoplot(osm_map)
 
 # Autoplot(map) is a self-sufficient ggplot object, and we can add geoms to it as usual.
 #   Let's add our sampling points to the map:
-autoplot(osm_map) + geom_point(data=fuels, aes(x=LONG, y=LAT))
+autoplot(osm_map) + geom_point(data=sales, aes(x=lon, y=lat))
 
 
 # This didn't work... Whats' wrong? Let's take a look at our map again:
 autoplot(osm_map)
 
-# Now, examine LAT and LONG columns we are trying to plot:
-fuels[1:5, c("LAT", "LONG")]
+# Now, examine lat and lon columns we are trying to plot:
+sales[1:5, c("lat", "lon")]
 
 # Looks like the downloaded map is in NZTM grid coordinates and our data is in lat/long.
 #   We can reproject our map to lat and long:
@@ -112,14 +114,19 @@ osm_map_latlon <- openproj(osm_map, projection = "+proj=longlat +ellps=WGS84 +da
 
 
 autoplot(osm_map_latlon) +
-  geom_point(aes(x = LONG, y = LAT), data = fuels, alpha = .5)
+  geom_point(aes(x = lon, y = lat), data = sales)
 
 
 # We can get creative with ggplot:
 
 autoplot(osm_map_latlon) +
-  geom_point(aes(x = LONG, y = LAT, color = GORSE.HT, size = GORSE.PERC), data = fuels, alpha = .5) +
+  geom_point(aes(x = lon, y = lat, color = year_built), data = sales, alpha = .5) +
   scale_color_gradientn(colors = topo.colors(10))
+
+
+# Map color to price / finished_squarefeet
+autoplot(osm_map_latlon) +
+  geom_point(aes(lon, lat, color = price / finished_squarefeet), data = sales)
 
 
 # This is good for simple stuff, but with autoplot we don't have a way to pass a data and aes()
@@ -136,118 +143,151 @@ autoplot(osm_map_latlon) +
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 
-# Let's first compare maps at a more zoomed-out scale
+# let's experiment with the ggmap package now. It doesn't have an opensource satellite map,
+#   but has an intuitive interface
 
-
-
-stamen_map <- get_stamenmap(rakaia_lims, zoom = 13, scale = 1, maptype = "toner-lite")
-
-ggmap(stamen_map)
-
-# You can add layers of data to a ggmap() call (e.g. + geom_point()).
-# NOTE: ggmap() sets the map as the default dataset and also sets the default aesthetic mappings
-#   if you want to add a layer from something other than the map, you need to explicitly 
-#   specify both the mapping and data arguments to the geom.
-
-
-# This:
-ggplot(fuels, aes(x = LONG, y = LAT)) + 
-  geom_point()
-
-# is the same as this:
-ggplot() + 
-  geom_point(data = fuels, aes(x = LONG, y = LAT))
-
-# Now, replace ggplot() with ggmap(stamen_map):
-ggmap(stamen_map) + 
-  geom_point(data = fuels, aes(x = LONG, y = LAT))
-
-
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-
-
-# Add additional properties through color and size:
-
-autoplot(map_latlon) +
-  geom_point(aes(x = LONG, y = LAT, col = GORSE.HT, size = GORSE.PERC), data = fuels, alpha = .5)
-
-
-
-#syntax for looking at different type of OSM and Stamen maps
+#syntax for looking at different types of ggmap maps
 ?get_map
 
-corvallis <- c(lon = -123.2620, lat = 44.5646)
+# Check out some ggmap maps:
+ggmap_tonerlite_map <- get_stamenmap(bounding_box, zoom = 12, scale = 1, maptype = "toner-lite")
+ggmap(ggmap_tonerlite_map)
 
-# Add a maptype argument to get a satellite map
-corvallis_map_bw <- get_stamenmap(sac_borders, zoom = 13, maptype = "toner", source = "stamen") #Also very good
-corvallis_map1 <- get_stamenmap(sac_borders, zoom = 12, maptype = "terrain") #best so far
-corvallis_map2 <- get_stamenmap(sac_borders, zoom = 13, maptype = "terrain-background")
+ggmap_toner_map <- get_stamenmap(bounding_box, zoom = 12, scale = 1, maptype = "toner")
+ggmap(ggmap_toner_map)
 
-ggmap(corvallis_map_bw)
-ggmap(corvallis_map1)
-ggmap(corvallis_map2)
+ggmap_ter_back_map <- get_stamenmap(bounding_box, zoom = 13, maptype = "terrain-background")
+ggmap(ggmap_ter_back_map)
 
-
-# Edit to get display satellite map
-ggmap(corvallis_map1) +
-  geom_point(aes(x = LONG, y = LAT, col = GORSE.HT, size = GORSE.PERC), data = fuels, alpha = .5)
-
-# # Leveraging ggplot2's strengths
-# # You've seen you can add layers to a ggmap() plot by adding geom_***() layers and specifying the data and mapping explicitly, 
-# but this approach has two big downsides: further layers also need to specify the data and mappings, and facetting won't work at all.
-# # 
-# # Luckily ggmap() provides a way around these downsides: the base_layer argument. You can pass base_layer a normal ggplot() call 
-# that specifies the default data and mappings for all layers.
-# # 
-# # For example, the initial plot:
-# # 
-# # ggmap(corvallis_map) +
-# #   geom_point(data = sales, aes(lon, lat))
-# # could have instead been:
-# # 
-# # ggmap(corvallis_map, 
-# #     base_layer = ggplot(sales, aes(lon, lat))) +
-# #   geom_point()
-# # By moving aes(x, y) and data from the initial geom_point() function to the ggplot() call within the ggmap() call, you can add
-# facets, or extra layers, the usual ggplot2 way.
-# # 
-# # Let's try it out.
-
-
-# Use base_layer argument to ggmap() to specify data and x, y mappings
-ggmap(corvallis_map1, base_layer = ggplot(fuels, aes(LONG, LAT))) +
-  geom_point(aes(color = PT.HT))
-
-
-# This won't work with autoplot, so you'll need to specify info for each individual geom
+ggmap_ter_map <- get_stamenmap(bounding_box, zoom = 13, maptype = "terrain")
+ggmap(ggmap_ter_map)
 
 
 
-# Use base_layer argument to ggmap() and add facet_wrap()
+# Just like autoplot(), ggmap() is a standalone ggplot object, and we can add points to it:
 
-ggmap(corvallis_map1, base_layer = ggplot(fuels, aes(LONG, LAT))) +
-  geom_point(aes(color = PT.HT))
+ggmap(ggmap_ter_map) + 
+  geom_point(data = sales, aes(x = lon, y = lat))
 
-ggmap(corvallis_map1, base_layer = ggplot(fuels, aes(LONG, LAT))) +
-  geom_point(aes(color = PT.HT)) +
-  facet_wrap(~ PT.SP)
+
+# But a neat functionality of ggmap is that it allows us to specify data and aes() values
+#   to be applied to every geom in the plot. This reduces repetition and
+#   allows us to use facet wrap
+
+# Use base_layer argument to ggmap() to specify data and aes() mappings
+ggmap(ggmap_ter_map, base_layer = ggplot(sales, aes(lon, lat))) +
+  geom_point(aes(color = year_built)) +
+  facet_wrap(~class)
+
+
+
 
 
 # A quick alternative
 # 
-# ggmap also provides a quick alternative to ggmap(). Like qplot() in ggplot2, qmplot() is less flexible than a
-# full specification, but often involves significantly less typing. qmplot() replaces both steps -- downloading 
-# the map and displaying the map -- and its syntax is a blend between qplot(), get_map(), and ggmap().
+# ggmap also provides a quick alternative to ggmap().
+#   It's less flexible but allows to download and display a map in one go
 # 
 # Let's take a look at the qmplot() version of the faceted plot from the previous exercise:
 # 
-qmplot(LONG, LAT, data = fuels, geom = "point", color = PT.HT) +
-  facet_wrap(~ PT.SP)
+qmplot(lon, lat, data = sales, geom = "point", color = year_built) +
+  facet_wrap(~ class)
 
 # Notice we didn't specify a map, since qmplot() will grab one on its own. Otherwise the qmplot() call looks a lot 
 # like the corresponding qplot() call: use points to display the sales data, mapping lon to the x-axis, lat to the y-axis, 
 # and class to color. qmplot() also sets the default dataset and mapping (without the need for base_layer) so you can add 
 # facets without any extra work.
+
+
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#######             DRAWING POLYGONS           #############
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+
+ward_sales = read.csv("ward_sales.csv")
+
+ward_sales$ward = as.numeric(ward_sales$ward)
+
+
+# Drawing polygons
+# 
+# A choropleth map describes a map where polygons are colored according to some variable. In the ward_sales data frame,
+# you have information on the house sales summarised to the ward level. Your goal is to create a map where each ward is 
+# colored by one of your summaries: the number of sales or the average sales price.
+# 
+# In the data frame, each row describes one point on the boundary of a ward. The lon and lat variables describe its location 
+# and ward describes which ward it belongs to, but what are group and order?
+#   
+#   Remember the two tricky things about polygons? An area may be described by more than one polygon and order matters. group 
+# is an identifier for a single polygon, but a ward may be composed of more than one polygon, so you would see more than one 
+# value of group for such a ward. order describes the order in which the points should be drawn to create the correct shapes.
+# 
+# In ggplot2, polygons are drawn with geom_polygon(). Each row of your data is one point on the boundary and points are joined
+# up in the order in which they appear in the data frame. You specify which variables describe position using the x and y 
+# aesthetics and which points belong to a single polygon using the group aesthetic.
+# 
+# This is a little tricky, so before you make your desired plot, let's explore this a little more.
+
+
+# Add a point layer with color mapped to ward
+ggplot(ward_sales, aes(lon, lat)) +
+  geom_point(aes(color = ward))
+
+
+# Add a point layer with color mapped to group
+ggplot(ward_sales, aes(lon, lat)) +
+  geom_point(aes(color = group))
+
+
+# Add a path layer with group mapped to group
+ggplot(ward_sales, aes(lon, lat)) +
+  geom_path(aes(group = group))
+
+# Add a polygon layer with fill mapped to ward, and group to group
+ggplot(ward_sales, aes(lon, lat)) +
+  geom_polygon(aes(group = group, fill = ward))
+
+# Choropleth map
+# 
+# Now that you understand drawing polygons, let's get your polygons on a map. Remember, you replace your ggplot() 
+# call with a ggmap() call and the original ggplot() call moves to the base_layer() argument, then you add your 
+# polygon layer as usual:
+# 
+# ggmap(corvallis_map_bw,
+#       base_layer = ggplot(ward_sales,
+#                           aes(lon, lat))) +
+#   geom_polygon(aes(group = group, fill = ward))
+# Try it out in the console now!
+# 
+# Uh oh, things don't look right. Wards 1, 3 and 8 look jaggardy and wrong. What's happened? Part of the ward 
+# boundaries are beyond the map boundary. Due to the default settings in ggmap(), any data off the map is dropped before 
+# plotting, so some polygon boundaries are dropped and when the remaining points are joined up you get the wrong shapes.
+# 
+# Don't worry, there is a solution: ggmap() provides some arguments to control this behaviour. Arguments extent = "normal" 
+# along with maprange = FALSE force the plot to use the data range rather than the map range to define the plotting boundaries.
+
+
+# Fix the polygon cropping
+ggmap(ggmap_ter_map, 
+      base_layer = ggplot(ward_sales, aes(lon, lat)),
+      extent = "normal", maprange = FALSE) +
+  geom_polygon(aes(group = group, fill = ward))
+
+# Repeat, but map fill to num_sales
+ggmap(ggmap_ter_map, 
+      base_layer = ggplot(ward_sales, aes(lon, lat)),
+      extent = "normal", maprange = FALSE) +
+  geom_polygon(aes(group = group, fill = num_sales))
+
+# Repeat again, but map fill to avg_price
+ggmap(ggmap_ter_map, 
+      base_layer = ggplot(ward_sales, aes(lon, lat)),
+      extent = "normal", maprange = FALSE) +
+  geom_polygon(aes(group = group, fill = avg_price), alpha = 0.8)
+
+
 
 
 
@@ -263,15 +303,26 @@ gorse=getKMLcoordinates("Burn_envelope.kml",
 gorse1.sr = SpatialPolygons(list(Polygons(list(Polygon(gorse[1])), "x")))
 gorse2.sr = SpatialPolygons(list(Polygons(list(Polygon(gorse[5])), "x")))
 
+gorse1.sr@bbox
+gorse2.sr@bbox
 
-plot(gorse1.sr)
-plot(gorse2.sr)
+# openmap requires upper-left and lower-right coordinates
+rakaia_map <- openmap(c(-43.39838, 171.55549),
+               c(-43.41561, 171.57479),
+               zoom = 14, type="bing")
 
 
-autoplot(map_latlon) + geom_point(aes(x = LONG, y = LAT, col = PT.HT), data = fuels, alpha = .5) +
-      scale_color_gradient(low="yellow",high="red",guide="legend") + 
-  geom_path(data=gorse1.sr, aes(long, lat), colour = "grey") + 
-  geom_path(data=gorse2.sr, aes(long, lat), colour = "grey")
+# Reproject the map to lat and long:
+rakaia_map_latlon <- openproj(rakaia_map, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+
+
+
+autoplot(rakaia_map_latlon) + 
+  geom_path(data=gorse1.sr, aes(long, lat), colour = "blue") + 
+  geom_polygon(data=gorse2.sr, aes(long, lat), fill = "beige") + 
+  geom_point(data=gorse2.sr, aes(long, lat), size = 1, shape = 3, color = "deeppink")
+
+
 
 
 
@@ -286,11 +337,21 @@ autoplot(map_latlon) + geom_point(aes(x = LONG, y = LAT, col = PT.HT), data = fu
 
 
 
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#      INTERPOLATING VALUES ON THE MAP
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-#      INTERPOLATING VALUES ON THE map
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+# Load in some fuel sampling data. First row contains metadata, so we will skip it
+fuels = read.csv("Rakaia_fuels.csv", skip = 1)
+
+
+
+autoplot(map_latlon) + geom_point(aes(x = LONG, y = LAT, col = PT.HT), data = fuels, alpha = .5) +
+      scale_color_gradient(low="yellow",high="red",guide="legend") + 
+  geom_path(data=gorse1.sr, aes(long, lat), colour = "grey") + 
+  geom_path(data=gorse2.sr, aes(long, lat), colour = "grey")
+
 
 
 # duplicate fuels to make sure we don't make any changes to fuels:
@@ -304,20 +365,23 @@ fuels2$y=fuels2$LAT
 coordinates(fuels2) = ~x + y
 
 
-# Plot the results:
+
+# Plot the results using base R:
 plot(fuels2)
 
-# Plot the minimum/maximum x and y coordinates:
-points(c(min(fuels2$x), max(fuels2$x), min(fuels2$x), max(fuels2$x)), c(min(fuels2$y), min(fuels2$y), max(fuels2$y), max(fuels2$y)), pch=21, bg="red")
+# Add some points to the above plot - minimum/maximum x and y coordinates:
+points(c(min(fuels2$x), max(fuels2$x), min(fuels2$x), max(fuels2$x)),
+       c(min(fuels2$y), min(fuels2$y), max(fuels2$y), max(fuels2$y)),
+       pch=21, bg="red")
 
 # Define x and y range for interpolation area by expanding the bounding box a little:
 x.range <- as.numeric(c(min(fuels2$x)-0.001, max(fuels2$x)+0.001))  # min/max longitude of the interpolation area
 y.range <- as.numeric(c(min(fuels2$y)-0.001, max(fuels2$y)+0.001))  # min/max latitude of the interpolation area
 
 
-#Create a data frame from all combinations of the supplied vectors or factors.
-#   See the description of the return value for precise details of the way this is done.
-#   Set spatial coordinates to create a Spatial object. Assign gridded structure:
+# Create a data frame from all combinations of the x and y ranges.
+#   Set spatial coordinates to create a Spatial object. Assign gridded structure.
+# Note: by = ... specifies the size of the resulting pixels (smal value = high resolution)
 
 grd <- expand.grid(x = seq(from = x.range[1], to = x.range[2], by = 0.00005), y = seq(from = y.range[1], 
               to = y.range[2], by = 0.00005))  # expand points to grid
@@ -349,6 +413,8 @@ ggplot() + geom_tile(data = idw.ht, alpha = 0.8, aes(x = long, y = lat,
              colour = "red") + labs(fill = "Height (cm)", title = "Vegetation height at sampling point") +
   xlim(min(fuels2$x)-0.001, max(fuels2$x)+0.001) +
   ylim(min(fuels2$y)-0.001, max(fuels2$y)+0.001)
+
+
 
 
 
