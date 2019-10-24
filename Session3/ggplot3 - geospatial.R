@@ -605,7 +605,7 @@ ggplot() +
 
 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-#######                        EXPORTING A KML                    #############
+#######                     EXPORTING A GEOTIFF                  #############
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 library(raster)
@@ -631,7 +631,7 @@ plot(gorse1.sr,add=TRUE)
 rr <- mask(test, gorse1.sr)
 plot(rr);plot(gorse1.sr, add=TRUE)
 
-writeRaster(rr, "writeRaster_mask", format = "GTiff")
+writeRaster(rr, "R_Plots/writeRaster_mask", format = "GTiff")
 
 
 
@@ -645,7 +645,7 @@ proj4string(idw.ht3) <- crs.geo
 ##Export IDW output to GeoTIFF file
 outfilename <- tempfile(pattern="file", tmpdir = tempdir())
 writeGDAL(idw.ht3, outfilename, drivername = "GTiff")
-file.rename (outfilename, "idw.tif")
+file.rename (outfilename, "R_Plots/idw.tif")
 
 
 
