@@ -1,14 +1,16 @@
 
 
-if(!require(geospatial)){install.packages("geospatial")}
+# NOTE: you will need an internet connection to run some parts of this script
+
+
 if(!require(ggplot2)){install.packages("ggplot2")}
+if(!require(geospatial)){install.packages("geospatial")}
 if(!require(ggmap)){install.packages("ggmap")}
 if(!require(OpenStreetMap)){install.packages("OpenStreetMap")}
 if(!require(sp)){install.packages("sp")}
 
-
-library(geospatial)
 library(ggplot2)
+library(geospatial)
 library(ggmap)
 library(OpenStreetMap)
 library(sp)
@@ -25,24 +27,113 @@ setwd("./Session3")
 
 
 
+theme_set(theme_classic())
+
+
 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 #######                        SAVING IMAGES                      #############
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 
-ggsave()
+# Read some geospatial data in
+sales = read.csv("sales.csv")
 
 
-png()
-ggplot()
+# Plot some points with ggplot:
+plain_plot = ggplot(sales, aes(x = lon, y = lat)) + 
+  geom_point()
+plain_plot
+
+colour_plot = ggplot(sales, aes(x = lon, y = lat)) + 
+  geom_point(aes(color = year_built))
+colour_plot
+
+
+# Create a folder to save our plots into:
+dir.create("R_Plots")
+
+
+####----------------------     _GRAPHICAL INTERFACE      ----------------------####
+
+# Could use the "Export" button in the Plots section to the right
+
+# Coudl also pop-out a window with your graph, and use the right-click menu:
+
+windows(6, 5)
+colour_plot
+
+# Coudl re-write this as a one-liner to avoid the annouyance of your R window loosing focus
+#   (becoming inactive) as the new window pops up:
+windows(6, 5); colour_plot # Note the semicolon! This is efefctively two lines of code
+
+
+# Try copying the plot as metafile, pasting it into powerpoint, right-clicking on the plot
+#   and pressing "Group" -> "Ungroup"
+
+
+# NOTE: use graphics.off() command to clear all R-generated graphics - removes the need to
+#   manually close all your numerous pop-up windows. try it :)
+
 graphics.off()
 
 
-pdf()
-ggplot()
+
+####----------------------     _GGSAVE      ----------------------####
+
+# Easiest way to save a plot is to use ggsave:
+ggsave("R_Plots/Colour_plot-ggsave.png")
+
+# If we don't specify which plot we'd like to save, ggsave will save the latest one displayed.
+
+# Also, we can specifically specify which plot to save:
+ggsave("R_Plots/Plain_plot-ggsave.png", plain_plot)
+
+
+# Can also use other file formats:  "eps", "ps", "tex" (pictex), "pdf", "jpeg", "tiff", "png",
+#   "bmp", "svg" or "wmf" (windows only)
+
+
+# ggsave is very convenient, but cannot save multiple pages into one document.
+#   we can use standalone graphics devices for that
+
+
+
+####----------------------     _PNG(), PDF(), ETC.      ----------------------####
+
+
+png("R_Plots/Plain_plot-png.png")
+plain_plot
 graphics.off()
 
+
+pdf("R_Plots/Both_plots-pdf.pdf")
+plain_plot
+colour_plot
+graphics.off()
+
+
+####----------------------     _ADJUSTING SETTINGS      ----------------------####
+
+# take a look at the ggsave help menu by typing "?ggsave" in teh console below
+# you will likely change width, height and dpi most often
+
+# Before saving the plot, try experimenting with the desired size using the windows()
+#   command to make it exactly how you like it.
+
+graphics.off()
+windows(6, 3); colour_plot
+
+ggsave("R_Plots/Colour_plot-ggsave.png", colour_plot, width = 6, height = 3)
+
+
+# NOTE: all plot-generating/saving devices think in inches unless specified otherwise.
+#   An A4 page is 8.5 in x 11 in, so with 0.5 inch margins, plots should be at most
+#   7.5 in x 10 in. If they are larger, you'll just have to scale them once pasted
+
+
+# The beauty of aujtomatically saving images to a folder is that you can automatically
+#   paste them into reports using LaTeX or Knitr!
 
 
 
@@ -54,11 +145,10 @@ graphics.off()
 
 
 # Read the data in
-# Note: I placed metadata into the first row, so we will be skipping one row from the top:
 sales = read.csv("sales.csv")
 
 
-# Can simply plot points with ggplot:
+# Can simply plot points with ggplot (again):
 ggplot(sales, aes(x = lon, y = lat)) + 
   geom_point()
 
@@ -135,11 +225,12 @@ autoplot(osm_map_latlon) +
 
 
 # ggmap package gives us this functionality, but it can't access nice satellite imagery without
-#   signing up with google
+#   signing up with google... boo.
+
 
 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-#######         GGMAP PACKAGE - SATELLITE IMAGERY          #############
+#######              GGMAP PACKAGE - SATELLITE IMAGERY            #############
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 
@@ -193,16 +284,17 @@ ggmap(ggmap_ter_map, base_layer = ggplot(sales, aes(lon, lat))) +
 qmplot(lon, lat, data = sales, geom = "point", color = year_built) +
   facet_wrap(~ class)
 
-# Notice we didn't specify a map, since qmplot() will grab one on its own. Otherwise the qmplot() call looks a lot 
-# like the corresponding qplot() call: use points to display the sales data, mapping lon to the x-axis, lat to the y-axis, 
-# and class to color. qmplot() also sets the default dataset and mapping (without the need for base_layer) so you can add 
-# facets without any extra work.
+# Notice we didn't specify a map, since qmplot() will grab one on its own. Otherwise the
+#   qmplot() call looks a lot like the corresponding qplot() call: use points to display
+#   the sales data, mapping lon to the x-axis, lat to the y-axis, and class to color.
+#   qmplot() also sets the default dataset and mapping (without the need for base_layer)
+#   so you can add facets without any extra work.
 
 
 
 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-#######             DRAWING POLYGONS           #############
+#######                      DRAWING POLYGONS                     #############
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 
@@ -211,24 +303,25 @@ ward_sales = read.csv("ward_sales.csv")
 ward_sales$ward = as.numeric(ward_sales$ward)
 
 
-# Drawing polygons
+####----------------------     _DRAWING POLYGONS      ----------------------####
 # 
-# A choropleth map describes a map where polygons are colored according to some variable. In the ward_sales data frame,
-# you have information on the house sales summarised to the ward level. Your goal is to create a map where each ward is 
-# colored by one of your summaries: the number of sales or the average sales price.
+# A choropleth map describes a map where polygons are colored according to some variable.
+#   In the ward_sales data frame, you have information on the house sales summarised to the
+#   ward level.
+# Goal: create a map with each ward colored by number of sales or average sales price.
 # 
-# In the data frame, each row describes one point on the boundary of a ward. The lon and lat variables describe its location 
-# and ward describes which ward it belongs to, but what are group and order?
-#   
-#   Remember the two tricky things about polygons? An area may be described by more than one polygon and order matters. group 
-# is an identifier for a single polygon, but a ward may be composed of more than one polygon, so you would see more than one 
-# value of group for such a ward. order describes the order in which the points should be drawn to create the correct shapes.
+# Note the group and order columns in the dataframe.
+# An area can be described by more than one polygon, and order of points matters.
+#   Group = identifier for a single polygon (ward may be composed of more than one polygon)
+#   Order = order in which the points should be drawn to create the correct shapes.
 # 
-# In ggplot2, polygons are drawn with geom_polygon(). Each row of your data is one point on the boundary and points are joined
-# up in the order in which they appear in the data frame. You specify which variables describe position using the x and y 
-# aesthetics and which points belong to a single polygon using the group aesthetic.
+# In ggplot2, polygons are drawn with geom_polygon(). Each row of your data is one point on
+#   the boundary and points are joined up in the order in which they appear in the data frame.
+#   You specify which variables describe position using the x and y aesthetics and which
+#   points belong to a single polygon using the group aesthetic.
 # 
-# This is a little tricky, so before you make your desired plot, let's explore this a little more.
+# This is a little tricky, so before you make your desired plot, let's explore this a
+#   little more.
 
 
 # Add a point layer with color mapped to ward
@@ -243,30 +336,30 @@ ggplot(ward_sales, aes(lon, lat)) +
 
 # Add a path layer with group mapped to group
 ggplot(ward_sales, aes(lon, lat)) +
-  geom_path(aes(group = group))
+  geom_path(aes(group = group, colour = group))
 
 # Add a polygon layer with fill mapped to ward, and group to group
 ggplot(ward_sales, aes(lon, lat)) +
   geom_polygon(aes(group = group, fill = ward))
 
-# Choropleth map
+
+####----------------------     _CHOROPLETH MAP      ----------------------####
+
+# Let's now get the polygons on a map:
+
+ggmap(ggmap_ter_map,
+      base_layer = ggplot(ward_sales,
+                          aes(lon, lat))) +
+  geom_polygon(aes(group = group, fill = ward))
+
+# Uh oh, things don't look right. Wards 1, 3 and 8 look jaggardy and wrong.
+#   Part of the ward boundaries are beyond the map boundary. Due to the default settings
+#   in ggmap(), any data off the map is dropped beforeplotting, so some polygon boundaries
+#   are dropped and when the remaining points are joined up you get the wrong shapes.
 # 
-# Now that you understand drawing polygons, let's get your polygons on a map. Remember, you replace your ggplot() 
-# call with a ggmap() call and the original ggplot() call moves to the base_layer() argument, then you add your 
-# polygon layer as usual:
-# 
-# ggmap(corvallis_map_bw,
-#       base_layer = ggplot(ward_sales,
-#                           aes(lon, lat))) +
-#   geom_polygon(aes(group = group, fill = ward))
-# Try it out in the console now!
-# 
-# Uh oh, things don't look right. Wards 1, 3 and 8 look jaggardy and wrong. What's happened? Part of the ward 
-# boundaries are beyond the map boundary. Due to the default settings in ggmap(), any data off the map is dropped before 
-# plotting, so some polygon boundaries are dropped and when the remaining points are joined up you get the wrong shapes.
-# 
-# Don't worry, there is a solution: ggmap() provides some arguments to control this behaviour. Arguments extent = "normal" 
-# along with maprange = FALSE force the plot to use the data range rather than the map range to define the plotting boundaries.
+# ggmap() provides some arguments to control this behaviour. Arguments extent = "normal" 
+#   along with maprange = FALSE force the plot to use the data range rather than the map
+#   range to define the plotting boundaries.
 
 
 # Fix the polygon cropping
@@ -290,12 +383,12 @@ ggmap(ggmap_ter_map,
 
 
 
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#######                 GETTING POLYGONS FROM KML                 #############
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-########                     KML              ##############
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-
+if(!require(maptools)){install.packages("maptools")}
 library(maptools)
 gorse=getKMLcoordinates("Burn_envelope.kml", 
                         ignoreAltitude = TRUE)
@@ -319,27 +412,119 @@ rakaia_map_latlon <- openproj(rakaia_map, projection = "+proj=longlat +ellps=WGS
 
 autoplot(rakaia_map_latlon) + 
   geom_path(data=gorse1.sr, aes(long, lat), colour = "blue") + 
-  geom_polygon(data=gorse2.sr, aes(long, lat), fill = "beige") + 
-  geom_point(data=gorse2.sr, aes(long, lat), size = 1, shape = 3, color = "deeppink")
+  geom_polygon(data=gorse2.sr, aes(long, lat), fill = "green", alpha = 0.4) + 
+  geom_point(data=gorse2.sr, aes(long, lat), shape = 3, color = "deeppink")
 
 
 
 
 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-#######             GENERATE RANDOM POINTS           #############
+#######                      GENERATE RANDOM POINTS               #############
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 
+####--------------     _WITHIN USER-DEFINED BOUNDARIES      ---------------####
+
+# library(maptools)
+# library(sp)
+
+# punch in the coordinates of your polygon below, first x-coordinate, then y-coordinate:
+topleft=c(-5,5)
+topright=c(5,5)
+bottomright=c(5,-5)
+bottomleft=c(-5,-5)
+
+# Input the above coordinates into a 2-column matrix:
+xym=rbind(topleft, topright, bottomright, bottomleft)
+
+# Create a Polygon out of your coordinates, wrap that into a Polygons object,
+#   then wrap that into a SpatialPolygons object:
+p = Polygon(xym)
+ps = Polygons(list(p),1)
+sps = SpatialPolygons(list(ps))
+
+# Generate random points:
+sample1 = spsample(sps, n = 5, "stratified")
+# NOTE: n = ... is the APPROXIMATE number of random points R will generate
+#   (might need to re-run the code a few times to get the exact number you are looking for)
+sample1
+
+# Check how many points were generated:
+length(sample1)
+
+
+# if you need an EXACT number of points generated, could use a "while" loop:
+
+sample1 = spsample(sps, n = 5, "stratified")
+
+while(length(sample1) != 5){
+    sample1 = spsample(sps, n = 5, "stratified")
+}
+# Translation: while the number of objects in sample1 is not equal to 5, recalculate sample1
+
+
+# Check to see what your polygon and points look like:
+ggplot() +
+  geom_point(data = sps, aes(x = long, y = lat), shape = 15, color = "blue") +
+  geom_point(data = sample1, aes(x = long, y = lat), color = "red")
+
+# The generated poitns aren't plotted... Need to change "sample1" to a dataframe
+#   and figure out the column names to use in the aes() command
+
+ggplot() +
+  geom_point(data = sps, aes(x = long, y = lat), shape = 15, color = "blue", size = 3) +
+  geom_point(data = data.frame(sample1), aes(x = x1, y = x2), shape = 8)
+
+
+# Foolproof way of quickly visualizing the same thing with base R graphics:
+windows(6, 5)
+plot(sps)
+points(sample1)
+
+# I used the windows() command here just to allow for easy comparison between the two graphs
+
+
+####-----------------     _WITHIN EXISTING POLYGONS      -----------------####
+
+# library(maptools)
+
+# Take a look at our polygon:
+ggplot(gorse1.sr, aes(x = long, y = lat)) +
+  geom_path()
+
+# or:
+plot(gorse1.sr)
+
+
+sample2 <- spsample(gorse1.sr, n = 200, "stratified")
+while(length(sample2) != 200){
+    sample2 = spsample(sps, n = 200, "stratified")
+}
+
+
+ggplot() +
+  geom_path(data = gorse1.sr, aes(x = long, y = lat)) +
+  geom_point(data = as.data.frame(sample2), aes(x = x1, y = x2))
+
+# or:
+windows(6, 5)
+plot(gorse1.sr)
+points(sample2)
+# I used the windows() command here just to allow for easy comparison between the two graphs
+
+
+# if you'd like to save this as a csv file:
+write.csv(sample2, "write_Sample2.csv", row.names=FALSE)
 
 
 
 
 
 
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-#      INTERPOLATING VALUES ON THE MAP
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#######                 INTERPOLATING VALUES ON THE MAP           #############
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 
 # Load in some fuel sampling data. First row contains metadata, so we will skip it
@@ -405,12 +590,13 @@ names(idw.ht)[1:3] <- c("long", "lat", "var1.pred")  # give names to the modelle
 
 
 # Point height graph:
-ggplot() + geom_tile(data = idw.ht, alpha = 0.8, aes(x = long, y = lat, 
-        fill = round(var1.pred, 0))) + scale_fill_gradientn(colours = terrain.colors(10), breaks=seq(0,200, 25)) + 
+ggplot() +
+  geom_tile(data = idw.ht, aes(x = long, y = lat, fill = round(var1.pred, 0))) +
+  scale_fill_gradientn(colours = terrain.colors(10), breaks=seq(0,200, 25)) + 
   geom_path(data=gorse1.sr, aes(long, lat), colour = "grey35") + 
   geom_path(data=gorse2.sr, aes(long, lat), colour = "grey35") + 
-  geom_point(data = fuels, aes(x = LONG, y = LAT), shape = 21, 
-             colour = "red") + labs(fill = "Height (cm)", title = "Vegetation height at sampling point") +
+  geom_point(data = fuels, aes(x = LONG, y = LAT), shape = 21) +
+  labs(fill = "Height (cm)", title = "Vegetation height at sampling point") +
   xlim(min(fuels2$x)-0.001, max(fuels2$x)+0.001) +
   ylim(min(fuels2$y)-0.001, max(fuels2$y)+0.001)
 
@@ -418,43 +604,27 @@ ggplot() + geom_tile(data = idw.ht, alpha = 0.8, aes(x = long, y = lat,
 
 
 
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#######                        EXPORTING A KML                    #############
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
+library(raster)
 
-#$$$$$$$$$$$$$$$$$$$$$$$
-# EXPORTING A KML
-#$$$$$$$$$$$$$$$$$$$$$
-
-
-# library("sp")
-# library("rgdal")
-# 
-# # This works, but creates a zillion points, which GoogleEarth struggles with:
-# idw.ht.test = idw.ht
-# coordinates(idw.ht.test) <- c("long", "lat") # specify which columns contain spatial coords
-# proj4string(idw.ht.test) <- CRS("+init=epsg:4326") # specify the projection of the raster
-# writeOGR(idw.ht.test["var1.pred"], "idw_ht_test.kml", layer="ht", driver="KML") 
-
-
-#$$$$$$$$$$
-
-
-
-# Save as geotiff - this works for google earth (even though the image doesn't show up when opening tif as image)
+# Save as geotiff - this works for google earth (even though the image doesn't show up when
+#   opening tif as image)
 idw.ht2=idw.ht
 coordinates(idw.ht2) <- ~long+lat
 gridded(idw.ht2) <- TRUE
 proj4string(idw.ht2) <- CRS("+init=epsg:4326") # specify the projection of the raster
-data(SAGA_pal)
-library(raster)
 test <- raster(idw.ht2["var1.pred"])
 
 plot(test)
 
-writeRaster(test, "writeRaster_output", format = "GTiff")
+writeRaster(test, "R_Plots/writeRaster_output", format = "GTiff")
 
 
 
-#$$
+# Clip the raster to the extent of a polygon
 plot(test)
 plot(gorse1.sr,add=TRUE)
 
@@ -466,16 +636,15 @@ writeRaster(rr, "writeRaster_mask", format = "GTiff")
 
 
 
-#$$
 # Save as geotiff - this works for google earth
 
-idw.ht.test3 = idw(formula = PT.HT ~ 1, locations = fuels2, newdata = grd)  # apply idw model for the data
+idw.ht3 = idw(formula = PT.HT ~ 1, locations = fuels2, newdata = grd) # apply idw model for the data
 
 crs.geo <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
-proj4string(idw.ht.test3) <- crs.geo
+proj4string(idw.ht3) <- crs.geo
 ##Export IDW output to GeoTIFF file
 outfilename <- tempfile(pattern="file", tmpdir = tempdir())
-writeGDAL(idw.ht.test3, outfilename, drivername = "GTiff")
+writeGDAL(idw.ht3, outfilename, drivername = "GTiff")
 file.rename (outfilename, "idw.tif")
 
 
