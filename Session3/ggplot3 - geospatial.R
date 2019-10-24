@@ -499,7 +499,7 @@ plot(gorse1.sr)
 
 sample2 <- spsample(gorse1.sr, n = 200, "stratified")
 while(length(sample2) != 200){
-    sample2 = spsample(sps, n = 200, "stratified")
+    sample2 = spsample(gorse1.sr, n = 200, "stratified")
 }
 
 
@@ -515,7 +515,7 @@ points(sample2)
 
 
 # if you'd like to save this as a csv file:
-write.csv(sample2, "write_Sample2.csv", row.names=FALSE)
+write.csv(sample2, "R_output-Sample2.csv", row.names=FALSE)
 
 
 
@@ -532,8 +532,9 @@ fuels = read.csv("Rakaia_fuels.csv", skip = 1)
 
 
 
-autoplot(map_latlon) + geom_point(aes(x = LONG, y = LAT, col = PT.HT), data = fuels, alpha = .5) +
-      scale_color_gradient(low="yellow",high="red",guide="legend") + 
+autoplot(rakaia_map_latlon) +
+  geom_point(aes(x = LONG, y = LAT, col = PT.HT), data = fuels, alpha = .5) +
+  scale_color_gradient(low="yellow",high="red",guide="legend") + 
   geom_path(data=gorse1.sr, aes(long, lat), colour = "grey") + 
   geom_path(data=gorse2.sr, aes(long, lat), colour = "grey")
 
@@ -637,6 +638,8 @@ writeRaster(rr, "R_Plots/writeRaster_mask", format = "GTiff")
 
 
 # Save as geotiff - this works for google earth
+
+library(rgdal)
 
 idw.ht3 = idw(formula = PT.HT ~ 1, locations = fuels2, newdata = grd) # apply idw model for the data
 
