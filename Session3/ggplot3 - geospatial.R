@@ -42,11 +42,13 @@ sales = read.csv("sales.csv")
 
 # Plot some points with ggplot:
 plain_plot = ggplot(sales, aes(x = lon, y = lat)) + 
-  geom_point()
+  geom_point() +
+    coord_fixed()
 plain_plot
 
 colour_plot = ggplot(sales, aes(x = lon, y = lat)) + 
-  geom_point(aes(color = year_built))
+  geom_point(aes(color = year_built)) +
+    coord_fixed()
 colour_plot
 
 
@@ -124,7 +126,7 @@ graphics.off()
 graphics.off()
 windows(6, 3); colour_plot
 
-ggsave("R_Plots/Colour_plot-ggsave.png", colour_plot, width = 6, height = 3)
+ggsave("R_Plots/Colour_plot-ggsave.png", colour_plot, width = 6, height = 3, units = "cm")
 
 
 # NOTE: all plot-generating/saving devices think in inches unless specified otherwise.
@@ -186,6 +188,8 @@ osm_map <- openmap(c(bounding_box["top"], bounding_box["left"]),
 # View map using autoplot (part of ggplot):
 autoplot(osm_map)
 
+str(osm_map)
+
 
 # Autoplot(map) is a self-sufficient ggplot object, and we can add geoms to it as usual.
 #   Let's add our sampling points to the map:
@@ -227,6 +231,7 @@ autoplot(osm_map_latlon) +
 # ggmap package gives us this functionality, but it can't access nice satellite imagery without
 #   signing up with google... boo.
 
+get_map()
 
 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -243,6 +248,8 @@ autoplot(osm_map_latlon) +
 # Check out some ggmap maps:
 ggmap_tonerlite_map <- get_stamenmap(bounding_box, zoom = 12, scale = 1, maptype = "toner-lite")
 ggmap(ggmap_tonerlite_map)
+
+str(ggmap_tonerlite_map)
 
 ggmap_toner_map <- get_stamenmap(bounding_box, zoom = 12, scale = 1, maptype = "toner")
 ggmap(ggmap_toner_map)
@@ -281,6 +288,7 @@ ggmap(ggmap_ter_map, base_layer = ggplot(sales, aes(lon, lat))) +
 # 
 # Let's take a look at the qmplot() version of the faceted plot from the previous exercise:
 # 
+
 qmplot(lon, lat, data = sales, geom = "point", color = year_built) +
   facet_wrap(~ class)
 
@@ -326,7 +334,7 @@ ward_sales$ward = as.numeric(ward_sales$ward)
 
 # Add a point layer with color mapped to ward
 ggplot(ward_sales, aes(lon, lat)) +
-  geom_point(aes(color = ward))
+  geom_point(aes(color = as.numeric(ward)))
 
 
 # Add a point layer with color mapped to group
@@ -340,7 +348,7 @@ ggplot(ward_sales, aes(lon, lat)) +
 
 # Add a polygon layer with fill mapped to ward, and group to group
 ggplot(ward_sales, aes(lon, lat)) +
-  geom_polygon(aes(group = group, fill = ward))
+  geom_polygon(aes(group = group, fill = as.numeric(ward)))
 
 
 ####----------------------     _CHOROPLETH MAP      ----------------------####
@@ -436,7 +444,7 @@ bottomright=c(5,-5)
 bottomleft=c(-5,-5)
 
 # Input the above coordinates into a 2-column matrix:
-xym=rbind(topleft, topright, bottomright, bottomleft)
+xym = rbind(topleft, topright, bottomright, bottomleft)
 
 # Create a Polygon out of your coordinates, wrap that into a Polygons object,
 #   then wrap that into a SpatialPolygons object:
